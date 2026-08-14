@@ -1,151 +1,94 @@
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+import torch
+from audiocraft.models import MusicGen
+from audiocraft.data.audio import audio_write
+import tempfile
+import os
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+st.set_page_config(page_title="CEREBRO RABINO CABINA PRO", page_icon="👑", layout="wide")
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# ESTILO NEGRO + DORADO + MORADO
+st.markdown("""
+<style>
+.stApp {background: linear-gradient(135deg, #000, #1a0033); color: #FFD700;}
+h1, h2, h3 {color: #FFD700!important; text-shadow: 0 0 10px #8A2BE2;}
+.stButton>button {background: #8A2BE2; color: #FFD700; border-radius: 10px; font-weight: bold;}
+.stTextInput>div>div>input {background: #1a1a1a; color: #FFD700; border: 2px solid #FFD700;}
+</style>
+""", unsafe_allow_html=True)
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+st.title("👑 CEREBRO RABINO CABINA PRO v12.0")
+st.subheader("Tu estudio cristiano con IA")
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+tab1, tab2, tab3 = st.tabs(["📜 ESCRITOR PROFÉTICO", "🥁 FABRICA DE BEATS", "🎛️ MEZCLADOR FINAL"])
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+# PESTAÑA 1: LETRAS
+with tab1:
+    st.header("Escribe como los profetas")
+    nombre = st.text_input("Nombre del Artista", "RabinoRap")
+    tema = st.text_input("Tema Profético", "Victoria en Cristo")
+    estilo = st.selectbox("Unción / Estilo", ["Rap Cristiano", "Drill Cristiano", "Adoración Trap"])
+    
+    if st.button("SOLTAR LA LETRA 🔥"):
+        with st.spinner("El Espíritu está escribiendo..."):
+            letra = f"""
+[INTRO]
+Yo soy {nombre}, con la unción de Dios
+Tema: {tema} - Estilo: {estilo}
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+[VERSO 1]
+Me levanto en fe porque Cristo es mi voz
+Nada me detiene, camino con el Rey
+{tema} es mi porción, lo declaro hoy
+Su palabra es espada, corta toda ley
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+[HOOK]
+{tema}, {tema}
+En el nombre de Jesús yo venceré
+{tema}, {tema} 
+Su promesa nunca falla, lo veré
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+[VERSO 2]
+Desde Los Alcarrizos hasta las naciones
+Llevamos el mensaje con las nuevas generaciones
+No es por fama, es por salvación
+CEREBRO RABINO activado con unción
 
-    return gdp_df
+[BRIDGE]
+Todo lo puedo en Cristo que me fortalece
+Filipenses 4:13, su poder permanece
+"""
+            st.text_area("TU LETRA SANTA:", letra, height=400)
+            st.download_button("DESCARGAR LETRA", letra, file_name=f"{nombre}_{tema}.txt")
 
-gdp_df = get_gdp_data()
+# PESTAÑA 2: BEATS
+with tab2:
+    st.header("Genera beats originales con IA")
+    beat_estilo = st.selectbox("Estilo del Beat", ["rap cristiano", "drill cristiano", "trap cristiano"])
+    bpm = st.slider("BPM", 70, 150, 90)
+    
+    if st.button("GENERAR BEAT SANTO 🥁"):
+        with st.spinner("Creando beat original... Tarda 2 min"):
+            model = MusicGen.get_pretrained('facebook/musicgen-small')
+            model.set_generation_params(duration=30)
+            description = f"{beat_estilo} beat, {bpm} bpm, uplifting, no vocals, instrumental"
+            wav = model.generate([description])
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                audio_write(tmp.name, wav[0].cpu(), model.sample_rate, format="wav")
+                st.audio(tmp.name)
+                with open(tmp.name, "rb") as f:
+                    st.download_button("DESCARGAR BEAT", f, file_name=f"beat_{beat_estilo}.wav")
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+# PESTAÑA 3: MEZCLADOR
+with tab3:
+    st.header("Mezcla y Domina")
+    st.info("""
+    **PASOS PARA GRABAR:**
+    1. Descarga tu beat de la pestaña 2
+    2. Grábate en tu cel con BandLab o Voice Memos
+    3. Próximamente: Clonador de Voz IA
+    """)
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+st.markdown("---")
+st.caption("CEREBRO RABINO © 2026 | Hecho para la gloria de Dios")
