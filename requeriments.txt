@@ -1,6 +1,4 @@
 streamlit
 numpy
-scipy
-soundfile
 google-generativeai
 gTTS
