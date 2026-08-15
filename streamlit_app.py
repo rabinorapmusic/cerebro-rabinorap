@@ -422,3 +422,298 @@ st.divider()
 st.success(
     "🧠 CEREBRO RABINO PRO está ENCENDIDO."
         )
+ESTUDIO_CEREBRO_RABINO_PRO = """
+# 🎤 CEREBRO RABINO PRO — ESTUDIO COMPLETO
+
+## 1. LETRA
+
+Título: Dios me levantó del lodo
+Artista: Rabino Rap
+Género: Rap Cristiano + Worship
+Subgénero: Boom Bap Cristiano moderno
+Idioma: Español
+
+Vibe:
+Agresivo, épico, espiritual, motivador y lleno de esperanza.
+
+Mensaje:
+Dios rescata al ser humano de su pasado, lo restaura, le devuelve
+identidad y lo levanta para cumplir su propósito.
+
+PALABRAS OBLIGATORIAS:
+fe, lodo, corona, propósito, Rabino Rap
+
+ESTRUCTURA EXACTA:
+
+INTRO:
+4 barras.
+
+VERSO 1:
+Exactamente 16 barras.
+Esquema de rima ABAB.
+Flow agresivo pero claro.
+Hablar del pasado, caída, dolor y rescate de Dios.
+
+PRE-CORO:
+4 barras.
+Aumentar progresivamente la emoción.
+
+CORO:
+8 barras.
+Melódico, poderoso y fácil de recordar.
+Mezcla de rap y worship.
+Debe transmitir victoria y esperanza.
+Incluir naturalmente las palabras fe, lodo y corona.
+
+CORO X2:
+Repetir exactamente el coro.
+La segunda repetición debe tener mayor intensidad.
+
+VERSO 2:
+Exactamente 16 barras.
+Esquema de rima ABAB.
+Más agresivo que el verso 1.
+Hablar de transformación, propósito, victoria y nueva identidad.
+Incluir naturalmente "Rabino Rap".
+
+PUENTE:
+6 barras.
+Más worship.
+Sensación de elevación espiritual.
+
+CORO FINAL:
+8 barras.
+Máxima intensidad.
+Voz principal + dobles + ad-libs.
+Sensación de victoria.
+
+OUTRO:
+4 barras.
+Cierre emocional.
+Terminar con una frase contundente relacionada con
+Dios levantando al protagonista del lodo.
+
+REGLAS:
+- Letra completamente original.
+- No copiar canciones existentes.
+- Español latino/caribeño.
+- Rimas naturales.
+- No usar relleno.
+- Mantener coherencia narrativa.
+- Métrica compatible con 107 BPM.
+- Mantener mensaje cristiano.
+- Flow agresivo pero esperanzador.
+
+
+## 2. BEAT
+
+Estilo: Boom Bap Cristiano moderno
+BPM: 107
+Tonalidad: C menor
+Duración: 2:30
+Intensidad: 8/10
+
+BATERÍA:
+- Kick fuerte.
+- Kick principal en 1 y 3.
+- Snare fuerte en 2 y 4.
+- Hi-hats con dobles golpes y variaciones.
+- Ghost notes sutiles.
+- Fills antes de coros.
+
+BAJO:
+- Potente y profundo.
+- Tonalidad C menor.
+- Subgrave controlado.
+- No competir con la voz.
+
+INSTRUMENTOS:
+- Piano oscuro en C menor.
+- Texturas worship.
+- Cuerdas cinematográficas.
+- Atmósferas espirituales.
+- Melodía memorable sin competir con la voz.
+
+ESTRUCTURA DEL BEAT:
+
+0:00 - 0:10  INTRO
+0:10 - 0:42  VERSO 1
+0:42 - 0:52  PRE-CORO
+0:52 - 1:10  CORO
+1:10 - 1:28  CORO X2
+1:28 - 2:00  VERSO 2
+2:00 - 2:10  PUENTE
+2:10 - 2:25  CORO FINAL
+2:25 - 2:30  OUTRO
+
+
+## 3. VOCES
+
+Tipo:
+Voz masculina.
+
+Idioma:
+Español.
+
+Estilo:
+Rap cristiano agresivo moderno.
+
+Velocidad:
+Normal.
+
+Dicción:
+Clara, fuerte y contundente.
+
+Emoción:
+Confianza + unción + esperanza + autoridad.
+
+INTERPRETACIÓN:
+
+VERSOS:
+Rap firme y agresivo.
+
+PRE-CORO:
+Aumentar emoción.
+
+CORO:
+Interpretación melódica/worship.
+
+PUENTE:
+Más emocional y espiritual.
+
+CORO FINAL:
+Máxima potencia.
+
+CAPAS:
+- Voz principal centrada.
+- Dobles discretos.
+- Ad-libs.
+- Coros más amplios.
+- No saturar de efectos.
+
+
+## 4. MEZCLA
+
+Volumen objetivo: 0.8
+
+EQ VOCAL:
+Graves: +3 dB
+Agudos: +2 dB
+
+EFECTOS:
+Reverb vocal: 0.3
+Delay del coro: 0.1
+
+Además:
+- Compresión vocal moderada.
+- Control de sibilancias.
+- Voz siempre al frente.
+- Bajo potente pero limpio.
+- Evitar clipping.
+- Evitar distorsión digital.
+- Master fuerte pero limpio.
+
+
+## 5. PORTADA
+
+Título:
+DE LODO A CORONA
+
+Artista:
+Rabino Rap
+
+CONCEPTO:
+
+Un hombre emerge de un terreno de lodo oscuro.
+El lodo representa el pasado, dolor, pecado y dificultades.
+
+Sobre él aparece una corona formada por luz dorada,
+representando restauración, victoria, identidad y propósito.
+
+ESTILO:
+- Fondo negro profundo.
+- Iluminación dorada cinematográfica.
+- Contraste alto.
+- 3D épico.
+- Realista.
+- Atmósfera espiritual.
+- Rayos de luz.
+- Partículas doradas.
+- Sensación de transformación y victoria.
+
+TEXTO PRINCIPAL:
+DE LODO A CORONA
+
+TEXTO SECUNDARIO:
+Rabino Rap
+
+TEXTO DE MARCA:
+CEREBRO RABINO PRO
+
+FORMATO:
+3000 x 3000 px
+Cuadrado
+Alta resolución
+Diseño profesional para plataformas musicales.
+
+
+## OBJETIVO FINAL
+
+Crear un proyecto musical profesional llamado:
+
+"DE LODO A CORONA"
+
+Artista:
+Rabino Rap
+
+El resultado debe sentirse:
+ÉPICO + ESPIRITUAL + AGRESIVO + MOTIVADOR + PROFESIONAL.
+
+Mensaje central:
+
+"Dios puede sacar a una persona del lodo,
+restaurarla, darle una corona y devolverle su propósito."
+"""
+
+
+# ============================================================
+# FUNCIÓN PARA CONSTRUIR EL PROMPT FINAL
+# ============================================================
+
+def generar_prompt_estudio(
+    tema="Dios me levantó del lodo",
+    artista="Rabino Rap"
+):
+    prompt = ESTUDIO_CEREBRO_RABINO_PRO
+
+    prompt += f"""
+
+DATOS DEL PROYECTO:
+
+Tema: {tema}
+Artista: {artista}
+
+IMPORTANTE:
+Respeta exactamente la estructura indicada.
+Los versos deben tener exactamente 16 barras cada uno.
+Mantén el esquema ABAB en los versos.
+No elimines las palabras obligatorias.
+No cambies el BPM, tonalidad ni duración.
+Genera contenido original.
+"""
+
+    return prompt
+
+
+# ============================================================
+# EJEMPLO
+# ============================================================
+
+if __name__ == "__main__":
+
+    prompt_final = generar_prompt_estudio()
+
+    print("=" * 70)
+    print("🎤 CEREBRO RABINO PRO")
+    print("=" * 70)
+    print(prompt_final)
