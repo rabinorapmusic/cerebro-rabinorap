@@ -1,42 +1,31 @@
 import streamlit as st
-import random
 
-st.set_page_config(page_title="CEREBRO RABINO 🎤", page_icon="🎧", layout="centered")
+st.set_page_config(page_title="CEREBRO RABINO PRO", page_icon="🎤", layout="wide")
 
-st.title("🎤 CEREBRO RABINO")
-st.subheader("El Generador de Rimas Más Duro del Barrio")
+st.title("🎤 CEREBRO RABINO PRO")
+st.subheader("El Generador de Rimas Más Duro + Profe de Biología")
 
-st.write("Escribe una palabra y te tiro 4 barras de rap al instante 🔥")
+tab1, tab2, tab3, tab4 = st.tabs(["TIRAR BARRAS", "CANCIÓN COMPLETA", "BEAT MAKER", "PROFE BIO"])
 
-palabra = st.text_input("Tu palabra clave:", placeholder="Ej: dinero, calle, flow...")
+with tab1:
+    palabra = st.text_input("Tu palabra clave:", placeholder="Ej: gracia, calle, flow...")
+    if st.button("TIRAR BARRAS 🔥"):
+        st.success(f"4 Barras sobre '{palabra}' vienen en camino...")
 
-rimas = {
-    "dinero": ["Contando billete en la noche entera", "Sin ti el flow no suena ni en la cartera", "Subo en la nube y no bajo a la tierra", "Mi cadena brilla más que una esfera"],
-    "calle": ["Criado en la calle, corazón de acero", "Cada esquina me conoce, yo soy el primero", "Respeto en el bloque, eso es lo verdadero", "Si hablan de mí, que sea con dinero"],
-    "flow": ["Llego con el flow que tumba el sombrero", "Rompo el beat, lo dejo en el cementerio", "Dime quién rapea más duro en el hemisferio", "CEREBRO RABINO, el dueño del imperio"],
-    "amor": ["Te escribo una carta con fuego y dolor", "Pero en el micrófono me vuelvo campeón", "El amor es arte, también es traición", "Por eso le canto con esta canción"],
-    "vida": ["La vida es una pista y yo soy el rapero", "Cayendo y levantando, siempre guerrillero", "De Los Alcarrizos pa' to' el mundo entero", "CEREBRO RABINO, rompiendo el cerro"]
-}
+with tab2:
+    tema = st.text_input("Tema de la canción:", placeholder="Ej: Salmo 23, Victoria")
+    if st.button("COMPONER CANCIÓN 🙏"):
+        st.info("Generando Verso, Coro y Puente...")
 
-def generar_rap(palabra):
-    palabra = palabra.lower()
-    if palabra in rimas:
-        barras = random.sample(rimas[palabra], 4)
-    else:
-        barras = [
-            f"Tirando barras con la palabra {palabra}",
-            "Improvisando como si fuera de NASA",
-            "El micrófono quema cuando yo paso",
-            "CEREBRO RABINO, rompiendo la casa"
-        ]
-    return "\n".join([f"**{i+1}.** {barra}" for i, barra in enumerate(barras)])
+with tab3:
+    estilo = st.selectbox("Elige el beat:", ["Worship", "Trap Cristiano", "Boom Bap", "Adoración"])
+    if st.button("GENERAR BEAT 🎵"):
+        st.warning("Aquí conectamos la IA de música después")
 
-if st.button("TIRAR BARRAS 🔥"):
-    if palabra:
-        st.success("Aquí tienes tus 4 barras:")
-        st.markdown(generar_rap(palabra))
-    else:
-        st.warning("Escribe una palabra primero manito")
-
+with tab4:
+    bio_tema = st.text_input("Tema de Biología:", placeholder="Ej: Mitocondria, ADN, Célula")
+    if st.button("EXPLICAME PROFE 🧬"):
+        st.success(f"Explicación de '{bio_tema}' nivel barrio + nivel examen")
+        
 st.markdown("---")
-st.caption("Hecho con Streamlit por CEREBRO RABINO 🎧 | Los Alcarrizos 2026")
+st.caption("Hecho con Streamlit por CEREBRO RABINO | Los Alcarrizos 2026")
