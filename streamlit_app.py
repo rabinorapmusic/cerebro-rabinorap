@@ -1,124 +1,90 @@
 import streamlit as st
 import numpy as np
 import io
-import os
+import wave
 import json
 import zipfile
-import tempfile
-from scipy.io import wavfile
+from gtts import gTTS
 
 # ============================================================
-# CEREBRO RABINO PRO
-# AI MUSIC STUDIO
-# RABINO RAP
+# GEMINI
+# ============================================================
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
+
+# ============================================================
+# CONFIGURACIÓN
 # ============================================================
 
 st.set_page_config(
     page_title="CEREBRO RABINO PRO",
     page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# ============================================================
-# ESTADO
-# ============================================================
-
-DEFAULTS = {
-    "letra": "",
-    "beat": None,
-    "drums": None,
-    "bass": None,
-    "melody": None,
-    "project_name": "De Lodo a Corona",
-    "last_prompt": ""
-}
-
-for key, value in DEFAULTS.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
+st.title("🧠 CEREBRO RABINO PRO")
+st.caption("🎤 AI MUSIC STUDIO — RABINO RAP")
 
 
 # ============================================================
-# ESTILO
+# CONFIGURACIÓN GEMINI
 # ============================================================
 
-st.markdown("""
-<style>
+modelo = None
 
-.main-title {
-    font-size: 42px;
-    font-weight: 900;
-    letter-spacing: 2px;
-}
+try:
+    GOOGLE_API_KEY = st.secrets.get(
+        "GOOGLE_API_KEY",
+        ""
+    )
 
-.subtitle {
-    font-size: 18px;
-    opacity: .75;
-}
-
-.metric-box {
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.12);
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# CABECERA
-# ============================================================
-
-st.markdown(
-    '<div class="main-title">🧠 CEREBRO RABINO PRO</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">🎤 AI MUSIC STUDIO — RABINO RAP</div>',
-    unsafe_allow_html=True
-)
-
-st.divider()
-
-
-# ============================================================
-# API GEMINI
-# ============================================================
-
-def cargar_gemini():
-
-    try:
-
-        import google.generativeai as genai
-
-        api_key = st.secrets.get(
-            "GOOGLE_API_KEY",
-            ""
-        )
-
-        if not api_key:
-            return None
+    if GOOGLE_API_KEY and genai:
 
         genai.configure(
-            api_key=api_key
+            api_key=GOOGLE_API_KEY
         )
 
-        return genai.GenerativeModel(
+        modelo = genai.GenerativeModel(
             "gemini-1.5-flash"
         )
 
-    except Exception:
-        return None
+except Exception as e:
 
-
-modelo = cargar_gemini()
+    modelo = None
 
 
 # ============================================================
-# UTILIDADES DE AUDIO
+# SESSION STATE
+# ============================================================
+
+if "letra" not in st.session_state:
+    st.session_state.letra = ""
+
+if "beat" not in st.session_state:
+    st.session_state.beat = None
+
+if "drums" not in st.session_state:
+    st.session_state.drums = None
+
+if "bass" not in st.session_state:
+    st.session_state.bass = None
+
+if "melody" not in st.session_state:
+    st.session_state.melody = None
+
+if "voz" not in st.session_state:
+    st.session_state.voz = None
+
+if "project_name" not in st.session_state:
+    st.session_state.project_name = "DE LODO A CORONA"
+
+
+# ============================================================
+# AUDIO
 # ============================================================
 
 SR = 44100
@@ -145,51 +111,55 @@ def normalizar(audio, peak=0.92):
 
 def convertir_wav(audio):
 
-    audio = normalizar(audio)
+    audio = normalizar(
+        audio,
+        0.92
+    )
 
-    audio_int = (
+    audio_int16 = (
         audio * 32767
     ).astype(np.int16)
 
     buffer = io.BytesIO()
 
-    wavfile.write(
+    with wave.open(
         buffer,
-        SR,
-        audio_int
-    )
+        "wb"
+    ) as archivo:
+
+        archivo.setnchannels(1)
+        archivo.setsampwidth(2)
+        archivo.setframerate(SR)
+
+        archivo.writeframes(
+            audio_int16.tobytes()
+        )
 
     return buffer.getvalue()
-
-
-def guardar_wav(audio, path):
-
-    audio = normalizar(audio)
-
-    audio_int = (
-        audio * 32767
-    ).astype(np.int16)
-
-    wavfile.write(
-        path,
-        SR,
-        audio_int
-    )
 
 
 # ============================================================
 # SINTETIZADORES
 # ============================================================
 
-def envelope(length, attack=0.005, release=0.15):
+def crear_envolvente(
+    cantidad,
+    ataque=0.005,
+    release=0.15
+):
 
-    t = np.arange(length) / SR
+    t = np.arange(
+        cantidad
+    ) / SR
 
-    env = np.ones(length)
+    env = np.ones(
+        cantidad,
+        dtype=np.float32
+    )
 
     attack_samples = max(
         1,
-        int(attack * SR)
+        int(ataque * SR)
     )
 
     release_samples = max(
@@ -199,12 +169,12 @@ def envelope(length, attack=0.005, release=0.15):
 
     attack_samples = min(
         attack_samples,
-        length
+        cantidad
     )
 
     release_samples = min(
         release_samples,
-        length
+        cantidad
     )
 
     env[:attack_samples] = np.linspace(
@@ -222,129 +192,200 @@ def envelope(length, attack=0.005, release=0.15):
     return env
 
 
-def synth_kick(duration=.35):
+def sintetizar_kick():
+
+    duracion = 0.35
 
     n = int(
-        duration * SR
+        duracion * SR
     )
 
     t = np.arange(n) / SR
 
-    freq = (
-        130 * np.exp(-18 * t)
+    frecuencia = (
+        140 * np.exp(-18 * t)
         + 42
     )
 
-    phase = 2 * np.pi * np.cumsum(freq) / SR
+    fase = (
+        2
+        * np.pi
+        * np.cumsum(frecuencia)
+        / SR
+    )
 
-    body = np.sin(phase)
+    cuerpo = np.sin(
+        fase
+    )
 
     click = (
         np.random.randn(n)
         * np.exp(-100 * t)
-        * .15
+        * 0.12
     )
 
     return (
-        body * np.exp(-10 * t)
+        cuerpo * np.exp(-10 * t)
         + click
-    ) * .95
+    )
 
 
-def synth_snare(duration=.22):
+def sintetizar_snare():
+
+    duracion = 0.22
 
     n = int(
-        duration * SR
+        duracion * SR
     )
 
     t = np.arange(n) / SR
 
-    noise = np.random.randn(n)
+    ruido = np.random.randn(n)
 
-    noise *= np.exp(
+    ruido *= np.exp(
         -22 * t
     )
 
-    tone = (
+    tono = (
         np.sin(
-            2 * np.pi * 190 * t
+            2
+            * np.pi
+            * 190
+            * t
         )
         * np.exp(-18 * t)
     )
 
     return (
-        noise * .55
-        + tone * .30
+        ruido * 0.55
+        + tono * 0.30
     )
 
 
-def synth_hat(duration=.06):
+def sintetizar_hat():
+
+    duracion = 0.055
 
     n = int(
-        duration * SR
+        duracion * SR
     )
 
     t = np.arange(n) / SR
 
-    noise = np.random.randn(n)
+    ruido = np.random.randn(n)
 
-    high = noise * np.exp(
-        -65 * t
+    return (
+        ruido
+        * np.exp(-70 * t)
+        * 0.20
     )
 
-    return high * .20
 
-
-def synth_bass(freq, duration):
+def sintetizar_bajo(
+    frecuencia,
+    duracion
+):
 
     n = int(
-        duration * SR
+        duracion * SR
     )
 
     t = np.arange(n) / SR
 
     fundamental = np.sin(
-        2 * np.pi * freq * t
+        2
+        * np.pi
+        * frecuencia
+        * t
     )
 
-    harmonic = .25 * np.sin(
-        2 * np.pi * freq * 2 * t
+    segundo_armonico = (
+        0.25
+        * np.sin(
+            2
+            * np.pi
+            * frecuencia
+            * 2
+            * t
+        )
     )
 
-    sub = .20 * np.sin(
-        2 * np.pi * freq / 2 * t
+    sub = (
+        0.20
+        * np.sin(
+            2
+            * np.pi
+            * frecuencia
+            / 2
+            * t
+        )
+    )
+
+    señal = (
+        fundamental
+        + segundo_armonico
+        + sub
     )
 
     return (
-        fundamental
-        + harmonic
-        + sub
-    ) * envelope(
-        n,
-        .01,
-        .15
-    ) * .65
+        señal
+        * crear_envolvente(
+            n,
+            0.01,
+            0.15
+        )
+        * 0.65
+    )
 
 
-def synth_piano(freq, duration):
+def sintetizar_piano(
+    frecuencia,
+    duracion
+):
 
     n = int(
-        duration * SR
+        duracion * SR
     )
 
     t = np.arange(n) / SR
 
-    signal = (
-        np.sin(2 * np.pi * freq * t)
-        + .35 * np.sin(2 * np.pi * freq * 2 * t)
-        + .15 * np.sin(2 * np.pi * freq * 3 * t)
+    señal = (
+        np.sin(
+            2
+            * np.pi
+            * frecuencia
+            * t
+        )
+        + 0.35
+        * np.sin(
+            2
+            * np.pi
+            * frecuencia
+            * 2
+            * t
+        )
+        + 0.15
+        * np.sin(
+            2
+            * np.pi
+            * frecuencia
+            * 3
+            * t
+        )
     )
 
-    return signal * envelope(
-        n,
-        .01,
-        min(.5, duration * .5)
-    ) * .22
+    return (
+        señal
+        * crear_envolvente(
+            n,
+            0.01,
+            min(
+                0.5,
+                duracion * 0.5
+            )
+        )
+        * 0.22
+    )
 
 
 # ============================================================
@@ -369,7 +410,34 @@ NOTE_FREQ = {
 
 
 # ============================================================
-# BEAT ENGINE
+# INSERTAR SONIDO
+# ============================================================
+
+def insertar_audio(
+    destino,
+    sonido,
+    tiempo
+):
+
+    inicio = int(
+        tiempo * SR
+    )
+
+    if inicio >= len(destino):
+        return
+
+    final = min(
+        inicio + len(sonido),
+        len(destino)
+    )
+
+    destino[inicio:final] += (
+        sonido[:final - inicio]
+    )
+
+
+# ============================================================
+# GENERADOR DE BEAT
 # ============================================================
 
 def generar_beat_pro(
@@ -401,10 +469,16 @@ def generar_beat_pro(
     )
 
     beat = 60 / bpm
-    bar = beat * 4
 
-    # Escala menor natural
-    scale_intervals = [
+    compas = beat * 4
+
+    root = NOTE_FREQ.get(
+        tonalidad,
+        NOTE_FREQ["C"]
+    )
+
+    # Escala menor
+    intervalos = [
         0,
         2,
         3,
@@ -414,240 +488,199 @@ def generar_beat_pro(
         10
     ]
 
-    root = NOTE_FREQ.get(
-        tonalidad,
-        NOTE_FREQ["C"]
-    )
-
-    scale = [
+    escala = [
         root * (
-            2 ** (i / 12)
+            2 ** (intervalo / 12)
         )
-        for i in scale_intervals
+        for intervalo in intervalos
     ]
 
-    # --------------------------------------------------------
-    # PATRÓN DE BATERÍA
-    # --------------------------------------------------------
-
-    bars = int(
-        duracion / bar
+    cantidad_compases = int(
+        duracion / compas
     ) + 1
 
-    for b in range(bars):
+    for compas_num in range(
+        cantidad_compases
+    ):
 
-        base = b * bar
+        inicio_compas = (
+            compas_num
+            * compas
+        )
 
+        # ----------------------------------------------------
         # KICK
-        kick_positions = [
-            0,
-            1.5,
-            2.75
-        ]
+        # ----------------------------------------------------
 
-        if estilo == "Boom Bap Cristiano":
-            kick_positions = [
+        if estilo == "Dembow":
+
+            kick_pattern = [
                 0,
-                1.5,
-                2.75
+                1.75,
+                2.5
             ]
 
         elif estilo == "Trap":
-            kick_positions = [
+
+            kick_pattern = [
                 0,
                 1.25,
                 2.5,
                 3.25
             ]
 
-        elif estilo == "Dembow":
-            kick_positions = [
+        else:
+
+            kick_pattern = [
                 0,
-                1.75,
-                2.5
+                1.5,
+                2.75
             ]
 
-        for pos in kick_positions:
+        for posicion in kick_pattern:
 
             tiempo = (
-                base
-                + pos * beat
+                inicio_compas
+                + posicion * beat
             )
 
             if tiempo >= duracion:
                 continue
 
-            sound = synth_kick()
-
-            start = int(
-                tiempo * SR
+            insertar_audio(
+                drums,
+                sintetizar_kick(),
+                tiempo
             )
 
-            end = min(
-                start + len(sound),
-                total
-            )
+        # ----------------------------------------------------
+        # SNARE
+        # ----------------------------------------------------
 
-            drums[start:end] += (
-                sound[:end-start]
-                * .95
-            )
-
-        # SNARE 2 Y 4
-        for pos in [1, 3]:
+        for posicion in [
+            1,
+            3
+        ]:
 
             tiempo = (
-                base
-                + pos * beat
+                inicio_compas
+                + posicion * beat
             )
 
             if tiempo >= duracion:
                 continue
 
-            sound = synth_snare()
-
-            start = int(
-                tiempo * SR
+            insertar_audio(
+                drums,
+                sintetizar_snare(),
+                tiempo
             )
 
-            end = min(
-                start + len(sound),
-                total
+        # ----------------------------------------------------
+        # HI-HATS
+        # ----------------------------------------------------
+
+        for paso in range(8):
+
+            posicion = (
+                paso * 0.5
             )
 
-            drums[start:end] += (
-                sound[:end-start]
-                * .75
-            )
-
-        # HI HATS
-        for step in range(8):
-
-            pos = step * .5
-
-            offset = 0
+            desplazamiento = 0
 
             if (
                 swing > 0
-                and step % 2 == 1
+                and paso % 2 == 1
             ):
-                offset = (
-                    swing * beat * .08
+
+                desplazamiento = (
+                    swing
+                    * beat
+                    * 0.08
                 )
 
             tiempo = (
-                base
-                + pos * beat
-                + offset
+                inicio_compas
+                + posicion * beat
+                + desplazamiento
             )
 
             if tiempo >= duracion:
                 continue
 
-            sound = synth_hat()
-
-            start = int(
-                tiempo * SR
-            )
-
-            end = min(
-                start + len(sound),
-                total
-            )
-
-            drums[start:end] += (
-                sound[:end-start]
+            insertar_audio(
+                drums,
+                sintetizar_hat(),
+                tiempo
             )
 
         # ----------------------------------------------------
         # BAJO
         # ----------------------------------------------------
 
-        bass_pattern = [
+        patron_bajo = [
             0,
             0,
             4,
             3
         ]
 
-        for i, degree in enumerate(
-            bass_pattern
+        for i, grado in enumerate(
+            patron_bajo
         ):
 
             tiempo = (
-                base
+                inicio_compas
                 + i * beat
             )
 
             if tiempo >= duracion:
                 continue
 
-            freq = (
-                scale[degree]
+            frecuencia = (
+                escala[grado]
                 / 2
             )
 
-            sound = synth_bass(
-                freq,
-                beat * .75
-            )
-
-            start = int(
-                tiempo * SR
-            )
-
-            end = min(
-                start + len(sound),
-                total
-            )
-
-            bass[start:end] += (
-                sound[:end-start]
+            insertar_audio(
+                bass,
+                sintetizar_bajo(
+                    frecuencia,
+                    beat * 0.75
+                ),
+                tiempo
             )
 
         # ----------------------------------------------------
-        # MELODÍA / PIANO
+        # MELODÍA
         # ----------------------------------------------------
 
-        chord_degrees = [
+        patron_melodia = [
             0,
             3,
             4,
             2
         ]
 
-        for i, degree in enumerate(
-            chord_degrees
+        for i, grado in enumerate(
+            patron_melodia
         ):
 
             tiempo = (
-                base
+                inicio_compas
                 + i * beat
             )
 
             if tiempo >= duracion:
                 continue
 
-            freq = scale[
-                degree
-            ]
-
-            sound = synth_piano(
-                freq,
-                beat * 1.8
-            )
-
-            start = int(
-                tiempo * SR
-            )
-
-            end = min(
-                start + len(sound),
-                total
-            )
-
-            melody[start:end] += (
-                sound[:end-start]
+            insertar_audio(
+                melody,
+                sintetizar_piano(
+                    escala[grado],
+                    beat * 1.8
+                ),
+                tiempo
             )
 
     # --------------------------------------------------------
@@ -655,16 +688,12 @@ def generar_beat_pro(
     # --------------------------------------------------------
 
     factor = (
-        intensity / 10
+        intensidad / 10
     )
 
     drums *= factor
     bass *= factor
     melody *= factor
-
-    # --------------------------------------------------------
-    # MASTER
-    # --------------------------------------------------------
 
     master = (
         drums
@@ -674,7 +703,7 @@ def generar_beat_pro(
 
     master = normalizar(
         master,
-        .90
+        0.90
     )
 
     return (
@@ -693,21 +722,20 @@ def generar_letra(
     tema,
     genero,
     bpm,
-    energia
+    intensidad
 ):
 
     if modelo is None:
 
         return (
-            "⚠️ Falta GOOGLE_API_KEY.\n\n"
-            "Añade GOOGLE_API_KEY en "
-            "Streamlit Secrets."
+            "⚠️ No hay conexión con Gemini.\n\n"
+            "Configura GOOGLE_API_KEY "
+            "en Streamlit Secrets."
         )
 
     prompt = f"""
-
 CEREBRO RABINO PRO
-MODO COMPOSITOR PROFESIONAL
+MODO ESTUDIO COMPLETO
 
 ARTISTA:
 Rabino Rap
@@ -721,15 +749,15 @@ GÉNERO:
 BPM:
 {bpm}
 
-ENERGÍA:
-{energia}/10
+INTENSIDAD:
+{intensidad}/10
 
 IDIOMA:
 Español latino.
 
-CREA UNA CANCIÓN ORIGINAL.
+CREA UNA CANCIÓN COMPLETAMENTE ORIGINAL.
 
-ESTRUCTURA EXACTA:
+ESTRUCTURA OBLIGATORIA:
 
 [INTRO]
 4 barras.
@@ -745,7 +773,7 @@ Rima ABAB.
 8 barras.
 
 [CORO X2]
-Repetir el coro.
+Repetir exactamente el coro.
 
 [VERSO 2]
 16 barras EXACTAS.
@@ -768,99 +796,71 @@ corona
 propósito
 Rabino Rap
 
-DIRECCIÓN ARTÍSTICA:
+DIRECCIÓN:
 
-Rap cristiano moderno.
-Agresivo pero esperanzador.
-Profundo.
+Rap Cristiano + Worship.
+Agresivo pero con esperanza.
+Épico.
 Espiritual.
 Motivador.
+Profundo.
 Contundente.
-Caribeño.
-Fácil de interpretar.
+Fácil de rapear.
+Coro memorable.
 
 REGLAS:
 
-- No copiar canciones existentes.
-- No mencionar otros artistas.
-- No explicar la letra.
-- Entregar solamente la canción.
-- Evitar relleno.
+- Letra 100% original.
+- No copiar canciones.
+- No imitar literalmente a otros artistas.
+- No explicar la canción.
+- Entregar únicamente la letra.
+- No usar relleno.
 - Rimas naturales.
 - Métrica compatible con {bpm} BPM.
-- Coro extremadamente memorable.
-- Crear imágenes visuales fuertes.
-- Mantener un mensaje cristiano claro.
+- Mantener mensaje cristiano.
 """
 
     try:
 
-        response = modelo.generate_content(
+        respuesta = modelo.generate_content(
             prompt
         )
 
-        return response.text
+        if respuesta and respuesta.text:
+
+            return respuesta.text
+
+        return "No se recibió contenido."
 
     except Exception as e:
 
-        return f"❌ Error IA: {e}"
+        return (
+            f"❌ Error de Gemini:\n{e}"
+        )
 
 
 # ============================================================
-# GENERADOR DE PROMPT MUSICAL
+# GENERADOR DE VOZ
 # ============================================================
 
-def crear_prompt_musical(
-    tema,
-    bpm,
-    tonalidad,
-    estilo,
-    intensidad
-):
+def generar_voz(texto):
 
-    return f"""
-CEREBRO RABINO PRO — BEAT SPEC
+    buffer = io.BytesIO()
 
-Tema:
-{tema}
+    tts = gTTS(
+        text=texto,
+        lang="es",
+        slow=False
+    )
 
-Estilo:
-{estilo}
+    tts.write_to_fp(
+        buffer
+    )
 
-BPM:
-{bpm}
+    buffer.seek(0)
 
-Tonalidad:
-{tonalidad} menor
-
-Intensidad:
-{intensidad}/10
-
-Drums:
-Boom bap moderno.
-Kick contundente.
-Snare seco y agresivo.
-Hi-hats con variaciones.
-Ghost notes.
-Fills antes de los coros.
-
-Bajo:
-Profundo.
-Potente.
-Subgrave controlado.
-Seguir la tonalidad.
-
-Melodía:
-Piano oscuro.
-Texturas cinematográficas.
-Elementos worship.
-Ambiente espiritual.
-
-Resultado:
-Beat instrumental profesional.
-Espacio suficiente para voz de rap.
-Máxima energía en el coro final.
-"""
+    return buffer.getvalue()
 
 
 # ============================================================
@@ -869,45 +869,41 @@ Máxima energía en el coro final.
 
 with st.sidebar:
 
-    st.header("⚙️ CONTROL CENTRAL")
-
-    nombre_proyecto = st.text_input(
-        "Nombre del proyecto",
-        "DE LODO A CORONA"
+    st.header(
+        "⚙️ CONTROL CENTRAL"
     )
 
-    st.session_state[
-        "project_name"
-    ] = nombre_proyecto
-
-    st.divider()
-
-    st.subheader(
-        "🎛️ Configuración musical"
+    st.session_state.project_name = (
+        st.text_input(
+            "Proyecto",
+            st.session_state.project_name
+        )
     )
 
-    bpm_global = st.slider(
-        "BPM",
+    bpm = st.slider(
+        "🥁 BPM",
         60,
         180,
         107
     )
 
-    tonalidad_global = st.selectbox(
-        "Tonalidad",
-        list(NOTE_FREQ.keys()),
+    tonalidad = st.selectbox(
+        "🎹 Tonalidad",
+        list(
+            NOTE_FREQ.keys()
+        ),
         index=0
     )
 
-    intensidad_global = st.slider(
-        "Intensidad",
+    intensidad = st.slider(
+        "🔥 Intensidad",
         1,
         10,
         8
     )
 
-    swing_global = st.slider(
-        "Swing",
+    swing = st.slider(
+        "🎵 Swing",
         0.0,
         1.0,
         0.20
@@ -917,17 +913,17 @@ with st.sidebar:
 
     st.metric(
         "BPM",
-        bpm_global
-    )
-
-    st.metric(
-        "ENERGÍA",
-        f"{intensidad_global}/10"
+        bpm
     )
 
     st.metric(
         "TONALIDAD",
-        f"{tonalidad_global} menor"
+        tonalidad + " menor"
+    )
+
+    st.metric(
+        "ENERGÍA",
+        f"{intensidad}/10"
     )
 
 
@@ -935,145 +931,30 @@ with st.sidebar:
 # TABS
 # ============================================================
 
-tabs = st.tabs([
-    "🧠 CEREBRO",
-    "✍️ LETRA",
-    "🥁 BEAT",
-    "🎤 VOZ",
-    "🎚️ MIX",
-    "📦 EXPORTAR"
-])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    [
+        "🧠 CEREBRO",
+        "✍️ LETRAS",
+        "🥁 BEATS",
+        "🎤 VOCES",
+        "🎚️ ESTUDIO",
+        "📦 EXPORTAR"
+    ]
+)
 
 
 # ============================================================
 # CEREBRO
 # ============================================================
 
-with tabs[0]:
+with tab1:
 
     st.header(
         "🧠 DIRECTOR MUSICAL"
     )
 
-    tema_cerebro = st.text_input(
-        "¿Qué canción quieres crear?",
-        "Dios me levantó del lodo"
-    )
-
-    estilo_cerebro = st.selectbox(
-        "Dirección",
-        [
-            "Rap Cristiano + Worship",
-            "Boom Bap Cristiano",
-            "Trap Cristiano",
-            "Dembow Cristiano",
-            "Worship Cinemático"
-        ]
-    )
-
-    energia_cerebro = st.slider(
-        "Energía",
-        1,
-        10,
-        8
-    )
-
-    if st.button(
-        "🚀 CREAR PROYECTO",
-        use_container_width=True
-    ):
-
-        with st.spinner(
-            "CEREBRO está diseñando el proyecto..."
-        ):
-
-            letra = generar_letra(
-                tema_cerebro,
-                estilo_cerebro,
-                bpm_global,
-                energia_cerebro
-            )
-
-            st.session_state[
-                "letra"
-            ] = letra
-
-            master, drums, bass, melody = (
-                generar_beat_pro(
-                    bpm_global,
-                    150,
-                    tonalidad_global,
-                    intensidad_global,
-                    swing_global,
-                    estilo_cerebro
-                )
-            )
-
-            st.session_state[
-                "beat"
-            ] = master
-
-            st.session_state[
-                "drums"
-            ] = drums
-
-            st.session_state[
-                "bass"
-            ] = bass
-
-            st.session_state[
-                "melody"
-            ] = melody
-
-        st.success(
-            "🔥 Proyecto creado."
-        )
-
-    st.divider()
-
-    st.subheader(
-        "📋 Estado del proyecto"
-    )
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    c1.metric(
-        "LETRA",
-        "✅" if st.session_state["letra"]
-        else "❌"
-    )
-
-    c2.metric(
-        "BEAT",
-        "✅" if st.session_state["beat"] is not None
-        else "❌"
-    )
-
-    c3.metric(
-        "DRUMS",
-        "✅" if st.session_state["drums"] is not None
-        else "❌"
-    )
-
-    c4.metric(
-        "BAJO",
-        "✅" if st.session_state["bass"] is not None
-        else "❌"
-    )
-
-
-# ============================================================
-# LETRA
-# ============================================================
-
-with tabs[1]:
-
-    st.header(
-        "✍️ GENERADOR DE LETRAS"
-    )
-
     tema = st.text_input(
-        "Tema",
+        "Tema principal",
         "Dios me levantó del lodo"
     )
 
@@ -1081,11 +962,119 @@ with tabs[1]:
         "Género",
         [
             "Rap Cristiano + Worship",
+            "Boom Bap Cristiano",
+            "Trap Cristiano",
+            "Dembow Cristiano",
+            "Worship"
+        ]
+    )
+
+    if st.button(
+        "🚀 CREAR PROYECTO COMPLETO",
+        use_container_width=True
+    ):
+
+        with st.spinner(
+            "🧠 CEREBRO está creando letra y beat..."
+        ):
+
+            # LETRA
+            st.session_state.letra = (
+                generar_letra(
+                    tema,
+                    genero,
+                    bpm,
+                    intensidad
+                )
+            )
+
+            # BEAT
+            (
+                master,
+                drums,
+                bass,
+                melody
+            ) = generar_beat_pro(
+                bpm,
+                150,
+                tonalidad,
+                intensidad,
+                swing,
+                genero
+            )
+
+            st.session_state.beat = master
+            st.session_state.drums = drums
+            st.session_state.bass = bass
+            st.session_state.melody = melody
+
+        st.success(
+            "🔥 PROYECTO CREADO"
+        )
+
+    st.divider()
+
+    st.subheader(
+        "📊 ESTADO"
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric(
+        "LETRA",
+        "✅"
+        if st.session_state.letra
+        else "❌"
+    )
+
+    c2.metric(
+        "BEAT",
+        "✅"
+        if st.session_state.beat is not None
+        else "❌"
+    )
+
+    c3.metric(
+        "DRUMS",
+        "✅"
+        if st.session_state.drums is not None
+        else "❌"
+    )
+
+    c4.metric(
+        "BAJO",
+        "✅"
+        if st.session_state.bass is not None
+        else "❌"
+    )
+
+
+# ============================================================
+# LETRAS
+# ============================================================
+
+with tab2:
+
+    st.header(
+        "✍️ GENERADOR DE LETRAS IA"
+    )
+
+    tema_letra = st.text_input(
+        "Tema",
+        "Dios me levantó del lodo",
+        key="tema_letra"
+    )
+
+    genero_letra = st.selectbox(
+        "Estilo",
+        [
+            "Rap Cristiano + Worship",
             "Rap Cristiano",
             "Trap Cristiano",
             "Worship",
             "Dembow Cristiano"
-        ]
+        ],
+        key="genero_letra"
     )
 
     if st.button(
@@ -1094,34 +1083,34 @@ with tabs[1]:
     ):
 
         with st.spinner(
-            "Escribiendo..."
+            "Escribiendo canción..."
         ):
 
-            st.session_state[
-                "letra"
-            ] = generar_letra(
-                tema,
-                genero,
-                bpm_global,
-                intensidad_global
+            st.session_state.letra = (
+                generar_letra(
+                    tema_letra,
+                    genero_letra,
+                    bpm,
+                    intensidad
+                )
             )
 
-    letra_actual = st.text_area(
-        "EDITOR",
-        st.session_state["letra"],
+    letra_editada = st.text_area(
+        "EDITOR DE LETRA",
+        st.session_state.letra,
         height=600
     )
 
-    st.session_state[
-        "letra"
-    ] = letra_actual
+    st.session_state.letra = (
+        letra_editada
+    )
 
 
 # ============================================================
-# BEAT
+# BEATS
 # ============================================================
 
-with tabs[2]:
+with tab3:
 
     st.header(
         "🥁 BEAT ENGINE"
@@ -1135,11 +1124,12 @@ with tabs[2]:
             "Trap",
             "Dembow",
             "Worship"
-        ]
+        ],
+        key="estilo_beat"
     )
 
-    duracion_beat = st.slider(
-        "Duración",
+    duracion = st.slider(
+        "Duración del beat",
         30,
         300,
         150
@@ -1151,7 +1141,7 @@ with tabs[2]:
     ):
 
         with st.spinner(
-            "Construyendo batería, bajo y melodía..."
+            "🥁 Generando batería + bajo + melodía..."
         ):
 
             (
@@ -1160,44 +1150,31 @@ with tabs[2]:
                 bass,
                 melody
             ) = generar_beat_pro(
-                bpm_global,
-                duracion_beat,
-                tonalidad_global,
-                intensidad_global,
-                swing_global,
+                bpm,
+                duracion,
+                tonalidad,
+                intensidad,
+                swing,
                 estilo_beat
             )
 
-            st.session_state[
-                "beat"
-            ] = master
-
-            st.session_state[
-                "drums"
-            ] = drums
-
-            st.session_state[
-                "bass"
-            ] = bass
-
-            st.session_state[
-                "melody"
-            ] = melody
+            st.session_state.beat = master
+            st.session_state.drums = drums
+            st.session_state.bass = bass
+            st.session_state.melody = melody
 
         st.success(
-            "🔥 Beat generado."
+            "🔥 BEAT LISTO"
         )
 
-    if st.session_state[
-        "beat"
-    ] is not None:
+    if st.session_state.beat is not None:
+
+        master_wav = convertir_wav(
+            st.session_state.beat
+        )
 
         st.subheader(
             "🎧 MASTER"
-        )
-
-        master_wav = convertir_wav(
-            st.session_state["beat"]
         )
 
         st.audio(
@@ -1206,12 +1183,10 @@ with tabs[2]:
         )
 
         st.download_button(
-            "⬇️ DESCARGAR BEAT WAV",
+            "⬇️ DESCARGAR MASTER WAV",
             master_wav,
             file_name=(
-                st.session_state[
-                    "project_name"
-                ]
+                st.session_state.project_name
                 + "_MASTER.wav"
             ),
             mime="audio/wav"
@@ -1225,21 +1200,15 @@ with tabs[2]:
 
         col1, col2, col3 = st.columns(3)
 
-        drums_wav = convertir_wav(
-            st.session_state["drums"]
-        )
-
-        bass_wav = convertir_wav(
-            st.session_state["bass"]
-        )
-
-        melody_wav = convertir_wav(
-            st.session_state["melody"]
-        )
-
         with col1:
 
-            st.write("🥁 DRUMS")
+            drums_wav = convertir_wav(
+                st.session_state.drums
+            )
+
+            st.write(
+                "🥁 BATERÍA"
+            )
 
             st.audio(
                 drums_wav,
@@ -1249,13 +1218,19 @@ with tabs[2]:
             st.download_button(
                 "⬇️ DRUMS",
                 drums_wav,
-                file_name="drums.wav",
+                file_name="DRUMS.wav",
                 mime="audio/wav"
             )
 
         with col2:
 
-            st.write("🔊 BASS")
+            bass_wav = convertir_wav(
+                st.session_state.bass
+            )
+
+            st.write(
+                "🔊 BAJO"
+            )
 
             st.audio(
                 bass_wav,
@@ -1265,13 +1240,19 @@ with tabs[2]:
             st.download_button(
                 "⬇️ BASS",
                 bass_wav,
-                file_name="bass.wav",
+                file_name="BASS.wav",
                 mime="audio/wav"
             )
 
         with col3:
 
-            st.write("🎹 MELODY")
+            melody_wav = convertir_wav(
+                st.session_state.melody
+            )
+
+            st.write(
+                "🎹 MELODÍA"
+            )
 
             st.audio(
                 melody_wav,
@@ -1281,60 +1262,89 @@ with tabs[2]:
             st.download_button(
                 "⬇️ MELODY",
                 melody_wav,
-                file_name="melody.wav",
+                file_name="MELODY.wav",
                 mime="audio/wav"
             )
 
 
 # ============================================================
-# VOZ
+# VOCES
 # ============================================================
 
-with tabs[3]:
+with tab4:
 
     st.header(
         "🎤 VOCES"
     )
 
     st.warning(
-        "La voz que tienes actualmente con gTTS "
-        "es voz hablada. No es un motor de rap/canto."
+        "gTTS genera voz hablada, no una voz de rap/canto profesional."
     )
 
-    st.write(
-        "Aquí dejamos preparado el punto de conexión "
-        "para un motor vocal local."
+    texto_voz = st.text_area(
+        "Texto para voz",
+        st.session_state.letra,
+        height=300
     )
 
-    st.code(
-        """
-LETRA
-   ↓
-MODELO VOCAL
-   ↓
-VOZ RAP
-   ↓
-WAV
-   ↓
-MIX
-        """
-    )
+    if st.button(
+        "🎤 GENERAR VOZ",
+        use_container_width=True
+    ):
 
-    st.info(
-        "La siguiente evolución será conectar "
-        "un modelo de voz musical que funcione "
-        "localmente en tu PC."
-    )
+        if not texto_voz.strip():
+
+            st.warning(
+                "Primero genera una letra."
+            )
+
+        else:
+
+            with st.spinner(
+                "Generando voz..."
+            ):
+
+                try:
+
+                    st.session_state.voz = (
+                        generar_voz(
+                            texto_voz
+                        )
+                    )
+
+                    st.success(
+                        "Voz generada."
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Error de voz: {e}"
+                    )
+
+    if st.session_state.voz:
+
+        st.audio(
+            st.session_state.voz,
+            format="audio/mp3"
+        )
+
+        st.download_button(
+            "⬇️ DESCARGAR VOZ",
+            st.session_state.voz,
+            file_name="Rabino_Rap_Voz.mp3",
+            mime="audio/mp3"
+        )
 
 
 # ============================================================
-# MIX
+# ESTUDIO
 # ============================================================
 
-with tabs[4]:
+with tab5:
 
     st.header(
-        "🎚️ MEZCLADOR"
+        "🎚️ ESTUDIO"
     )
 
     volumen = st.slider(
@@ -1374,22 +1384,18 @@ with tabs[4]:
 
     st.divider()
 
-    st.write(
-        "🎛️ CONFIGURACIÓN ACTUAL"
-    )
-
     st.json({
         "volumen": volumen,
-        "graves_db": graves,
-        "agudos_db": agudos,
+        "EQ_graves": f"{graves} dB",
+        "EQ_agudos": f"{agudos} dB",
         "reverb": reverb,
         "delay": delay
     })
 
     st.info(
-        "El mezclador está preparado para la "
-        "siguiente etapa: procesamiento DSP real "
-        "de stems y voces."
+        "🎚️ Los controles están preparados. "
+        "La siguiente etapa es aplicar DSP real "
+        "al beat y a las voces."
     )
 
 
@@ -1397,118 +1403,131 @@ with tabs[4]:
 # EXPORTAR
 # ============================================================
 
-with tabs[5]:
+with tab6:
 
     st.header(
         "📦 EXPORTAR PROYECTO"
     )
 
-    if (
-        st.session_state["beat"] is None
-        and not st.session_state["letra"]
+    if st.button(
+        "📦 CREAR ZIP COMPLETO",
+        use_container_width=True
     ):
 
-        st.warning(
-            "Todavía no hay un proyecto para exportar."
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            zipfile.ZIP_DEFLATED
+        ) as archivo_zip:
+
+            # ------------------------------------------------
+            # LETRA
+            # ------------------------------------------------
+
+            archivo_zip.writestr(
+                "LETRA.txt",
+                st.session_state.letra
+            )
+
+            # ------------------------------------------------
+            # CONFIGURACIÓN
+            # ------------------------------------------------
+
+            configuracion = {
+
+                "proyecto":
+                    st.session_state.project_name,
+
+                "artista":
+                    "Rabino Rap",
+
+                "bpm":
+                    bpm,
+
+                "tonalidad":
+                    tonalidad,
+
+                "modo":
+                    tonalidad + " menor",
+
+                "intensidad":
+                    intensidad,
+
+                "swing":
+                    swing
+            }
+
+            archivo_zip.writestr(
+                "CONFIG.json",
+                json.dumps(
+                    configuracion,
+                    indent=4,
+                    ensure_ascii=False
+                )
+            )
+
+            # ------------------------------------------------
+            # AUDIO
+            # ------------------------------------------------
+
+            if st.session_state.beat is not None:
+
+                archivo_zip.writestr(
+                    "MASTER.wav",
+                    convertir_wav(
+                        st.session_state.beat
+                    )
+                )
+
+                archivo_zip.writestr(
+                    "DRUMS.wav",
+                    convertir_wav(
+                        st.session_state.drums
+                    )
+                )
+
+                archivo_zip.writestr(
+                    "BASS.wav",
+                    convertir_wav(
+                        st.session_state.bass
+                    )
+                )
+
+                archivo_zip.writestr(
+                    "MELODY.wav",
+                    convertir_wav(
+                        st.session_state.melody
+                    )
+                )
+
+            # ------------------------------------------------
+            # VOZ
+            # ------------------------------------------------
+
+            if st.session_state.voz:
+
+                archivo_zip.writestr(
+                    "VOZ.mp3",
+                    st.session_state.voz
+                )
+
+        zip_buffer.seek(0)
+
+        st.success(
+            "📦 Proyecto preparado."
         )
 
-    else:
-
-        if st.button(
-            "📦 CREAR PAQUETE DEL PROYECTO",
-            use_container_width=True
-        ):
-
-            zip_buffer = io.BytesIO()
-
-            with zipfile.ZipFile(
-                zip_buffer,
-                "w",
-                zipfile.ZIP_DEFLATED
-            ) as z:
-
-                # LETRA
-                z.writestr(
-                    "letra.txt",
-                    st.session_state[
-                        "letra"
-                    ]
-                )
-
-                # CONFIG
-                config = {
-                    "project": st.session_state[
-                        "project_name"
-                    ],
-                    "bpm": bpm_global,
-                    "key": tonalidad_global,
-                    "intensity": intensidad_global,
-                    "swing": swing_global
-                }
-
-                z.writestr(
-                    "config.json",
-                    json.dumps(
-                        config,
-                        indent=4,
-                        ensure_ascii=False
-                    )
-                )
-
-                # STEMS
-                if st.session_state[
-                    "beat"
-                ] is not None:
-
-                    z.writestr(
-                        "MASTER.wav",
-                        convertir_wav(
-                            st.session_state[
-                                "beat"
-                            ]
-                        )
-                    )
-
-                    z.writestr(
-                        "DRUMS.wav",
-                        convertir_wav(
-                            st.session_state[
-                                "drums"
-                            ]
-                        )
-                    )
-
-                    z.writestr(
-                        "BASS.wav",
-                        convertir_wav(
-                            st.session_state[
-                                "bass"
-                            ]
-                        )
-                    )
-
-                    z.writestr(
-                        "MELODY.wav",
-                        convertir_wav(
-                            st.session_state[
-                                "melody"
-                            ]
-                        )
-                    )
-
-            zip_buffer.seek(0)
-
-            st.download_button(
-                "⬇️ DESCARGAR PROYECTO COMPLETO",
-                zip_buffer,
-                file_name=(
-                    st.session_state[
-                        "project_name"
-                    ]
-                    + ".zip"
-                ),
-                mime="application/zip"
-            )
+        st.download_button(
+            "⬇️ DESCARGAR PROYECTO COMPLETO",
+            zip_buffer,
+            file_name=(
+                st.session_state.project_name
+                + ".zip"
+            ),
+            mime="application/zip"
+        )
 
 
 # ============================================================
@@ -1518,9 +1537,9 @@ with tabs[5]:
 st.divider()
 
 st.success(
-    "🧠 CEREBRO RABINO PRO — MOTOR MUSICAL ACTIVO"
+    "🧠 CEREBRO RABINO PRO — ACTIVO"
 )
 
 st.caption(
-    "Rabino Rap © 2026 — AI MUSIC STUDIO"
-    )
+    "Rabino Rap • AI Music Studio"
+)
