@@ -1,2 +1,1 @@
-with tab3:
-    st.info("Próximo: conectamos para que suenen los beats")
+streamlit
