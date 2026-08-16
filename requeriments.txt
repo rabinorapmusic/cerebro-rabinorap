@@ -1,2 +1,2 @@
 streamlit
-requestsollama pull llama3.2oll0yye8servestreamlit run streamlit_app.py
+streamlit_app.py
