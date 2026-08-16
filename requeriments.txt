@@ -1,2 +1,1 @@
-streamlit
-pandas
+pip install streamlitstreamlit run streamlit_app.py
