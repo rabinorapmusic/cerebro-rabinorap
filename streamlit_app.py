@@ -1,528 +1,1080 @@
 import streamlit as st
+import requests
 import json
+import random
+import math
+import io
+import wave
+import re
 from datetime import datetime
 
-# ============================================================
-# 🧠 CEREBRO RABINO PRO
-# Generador creativo para música, letras y conceptos
-# ============================================================
+# ==========================================================
+# CEREBRO OMEGA v2
+# ==========================================================
 
 st.set_page_config(
-    page_title="CEREBRO RABINO PRO",
+    page_title="CEREBRO OMEGA v2",
     page_icon="🧠",
     layout="wide"
 )
 
-# ============================================================
+# ==========================================================
+# SESSION STATE
+# ==========================================================
+
+DEFAULTS = {
+    "respuesta": "",
+    "memoria": [],
+    "experimentos": [],
+    "audio": None,
+    "ultimo_prompt": "",
+}
+
+for key, value in DEFAULTS.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+
+# ==========================================================
+# CONFIGURACIÓN
+# ==========================================================
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+
+MODELOS = [
+    "llama3.2",
+    "qwen2.5",
+    "gemma3",
+    "mistral"
+]
+
+
+# ==========================================================
 # ESTILO
-# ============================================================
+# ==========================================================
 
 st.markdown("""
 <style>
-.main-title {
-    font-size: 42px;
-    font-weight: 900;
-    text-align: center;
-    margin-bottom: 5px;
+
+.omega-title {
+    text-align:center;
+    font-size:48px;
+    font-weight:900;
 }
-.subtitle {
-    text-align: center;
-    opacity: 0.75;
-    margin-bottom: 25px;
+
+.omega-subtitle {
+    text-align:center;
+    opacity:.75;
+    margin-bottom:25px;
 }
-.box {
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px solid rgba(128,128,128,.25);
-    margin-bottom: 15px;
+
+.card {
+    padding:18px;
+    border-radius:16px;
+    border:1px solid rgba(128,128,128,.25);
+    margin-bottom:12px;
 }
+
+.big-button {
+    font-size:20px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# TÍTULO
-# ============================================================
 
-st.markdown(
-    '<div class="main-title">🧠 CEREBRO RABINO PRO</div>',
-    unsafe_allow_html=True
-)
+# ==========================================================
+# FUNCIONES GENERALES
+# ==========================================================
 
-st.markdown(
-    '<div class="subtitle">Motor creativo para música, conceptos, letras y producción</div>',
-    unsafe_allow_html=True
-)
+def guardar_memoria(tipo, contenido):
 
-# ============================================================
-# FUNCIONES
-# ============================================================
-
-def generar_concepto(titulo, genero, tema, intensidad, bpm, mood, objetivo):
-
-    estructura = {
-        "Intro": "Entrada corta y poderosa que presenta el concepto.",
-        "Verso 1": "Presenta el conflicto, historia o mensaje.",
-        "Pre-Coro": "Aumenta la tensión emocional.",
-        "Coro": "Frase principal fácil de recordar.",
-        "Verso 2": "Profundiza el mensaje.",
-        "Puente": "Cambio emocional o revelación.",
-        "Coro Final": "Máxima intensidad y repetición del mensaje."
+    registro = {
+        "fecha": datetime.now().isoformat(),
+        "tipo": tipo,
+        "contenido": contenido
     }
 
-    concepto = f"""
-🧠 CONCEPTO CENTRAL
-━━━━━━━━━━━━━━━━━━━━
+    st.session_state.memoria.append(registro)
 
-Título: {titulo}
-Género: {genero}
-Tema: {tema}
-Intensidad: {intensidad}/100
-BPM: {bpm}
-Mood: {mood}
-Objetivo: {objetivo}
 
-🎯 IDEA PRINCIPAL
-La canción debe desarrollar el tema "{tema}" desde una perspectiva
-fuerte, memorable y emocional, utilizando imágenes, contrastes,
-frases contundentes y un coro fácil de recordar.
+def limpiar_nombre(texto):
 
-🔥 DIRECCIÓN ARTÍSTICA
-• Intro: crear curiosidad inmediatamente.
-• Versos: contar la historia y desarrollar el mensaje.
-• Coro: concentrar la idea principal.
-• Puente: elevar la emoción.
-• Final: dejar una frase memorable.
+    texto = re.sub(
+        r"[^a-zA-Z0-9_\-]",
+        "_",
+        texto
+    )
 
-🎼 ESTRUCTURA
+    return texto[:80]
+
+
+# ==========================================================
+# OLLAMA
+# ==========================================================
+
+def ollama_disponible():
+
+    try:
+
+        r = requests.get(
+            "http://localhost:11434/api/tags",
+            timeout=2
+        )
+
+        return r.status_code == 200
+
+    except Exception:
+
+        return False
+
+
+def preguntar_ia(prompt, modelo):
+
+    try:
+
+        respuesta = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": modelo,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=180
+        )
+
+        if respuesta.status_code != 200:
+            return "ERROR: Ollama respondió con código " + str(
+                respuesta.status_code
+            )
+
+        data = respuesta.json()
+
+        return data.get(
+            "response",
+            "La IA no devolvió respuesta."
+        )
+
+    except Exception as e:
+
+        return (
+            "MODELO LOCAL NO DISPONIBLE.\n\n"
+            "Instala Ollama y descarga un modelo.\n\n"
+            f"Detalle: {e}"
+        )
+
+
+# ==========================================================
+# DIRECTOR OMEGA
+# ==========================================================
+
+def director_omega(
+    objetivo,
+    contexto,
+    modelo,
+    profundidad,
+    atrevimiento
+):
+
+    prompt = f"""
+Eres CEREBRO OMEGA, un laboratorio interdisciplinario.
+
+OBJETIVO:
+{objetivo}
+
+CONTEXTO:
+{contexto}
+
+PROFUNDIDAD:
+{profundidad}/100
+
+ATREVIMIENTO:
+{atrevimiento}/100
+
+Debes trabajar como un equipo compuesto por:
+
+1. DIRECTOR
+2. CIENTÍFICO
+3. FILÓSOFO
+4. ANALISTA
+5. CREADOR
+6. CRÍTICO
+7. OPTIMIZADOR
+
+REGLAS:
+
+- Separa hechos de hipótesis.
+- Separa ciencia de metáforas espirituales.
+- No presentes especulación como hecho.
+- Busca conexiones interdisciplinarias.
+- Propón experimentos verificables cuando sea posible.
+- Busca alternativas.
+- Critica tus propias conclusiones.
+- No aceptes automáticamente la primera solución.
+
+RESPONDE EN ESTA ESTRUCTURA:
+
+[OBJETIVO]
+
+[MAPA DEL PROBLEMA]
+
+[CIENCIA]
+
+[FILOSOFÍA]
+
+[ESPIRITUALIDAD / SIMBOLISMO]
+
+[HIPÓTESIS]
+
+[CONTRAARGUMENTOS]
+
+[EXPERIMENTOS]
+
+[IDEAS NUEVAS]
+
+[MEJOR SOLUCIÓN]
+
+[SIGUIENTE EXPERIMENTO]
 """
 
-    for parte, descripcion in estructura.items():
-        concepto += f"\n{parte}: {descripcion}"
-
-    concepto += f"""
-
-⚡ INTENSIDAD
-Nivel: {intensidad}/100
-
-La producción debe sentirse:
-• Energética
-• Cinemática
-• Emocional
-• Dinámica
-• Profesional
-
-🎧 PROMPT DE PRODUCCIÓN
-
-{generar_prompt(titulo, genero, tema, intensidad, bpm, mood)}
-
-"""
-
-    return concepto
+    return preguntar_ia(
+        prompt,
+        modelo
+    )
 
 
-def generar_prompt(titulo, genero, tema, intensidad, bpm, mood):
+# ==========================================================
+# MOTOR DE MUTACIÓN
+# ==========================================================
+
+def mutar_idea(idea, cantidad=10):
+
+    mutaciones = [
+        "invertir el supuesto principal",
+        "eliminar una restricción",
+        "añadir una restricción extrema",
+        "combinar dos disciplinas",
+        "buscar una explicación alternativa",
+        "reducir el problema al mínimo",
+        "imaginar el problema a escala planetaria",
+        "imaginarlo a escala microscópica",
+        "buscar una solución completamente distinta",
+        "convertirlo en un experimento computacional"
+    ]
+
+    resultados = []
+
+    for i in range(cantidad):
+
+        cambio = random.choice(
+            mutaciones
+        )
+
+        resultados.append(
+            f"VARIANTE {i+1}\n"
+            f"Idea: {idea}\n"
+            f"Mutación: {cambio}\n"
+        )
+
+    return "\n\n".join(
+        resultados
+    )
+
+
+# ==========================================================
+# SIMULADOR EVOLUTIVO
+# ==========================================================
+
+def evolucion_simulada(
+    generaciones,
+    poblacion,
+    seleccion,
+    mutacion
+):
+
+    frecuencia = 0.5
+
+    datos = []
+
+    for generacion in range(
+        generaciones
+    ):
+
+        fitness_a = 1.0
+
+        fitness_b = (
+            1.0 +
+            seleccion
+        )
+
+        frecuencia = (
+            frecuencia * fitness_a
+        ) / (
+            frecuencia * fitness_a
+            +
+            (1-frequency) * fitness_b
+        )
+
+        frecuencia += (
+            mutacion *
+            (1-frequency)
+        )
+
+        frecuencia -= (
+            mutacion *
+            0.25 *
+            frecuencia
+        )
+
+        frecuencia = max(
+            0,
+            min(
+                1,
+                frecuencia
+            )
+        )
+
+        datos.append(
+            {
+                "Generación":
+                    generacion + 1,
+
+                "Frecuencia":
+                    frecuencia
+            }
+        )
+
+    return datos
+
+
+# ==========================================================
+# GENERADOR DE AUDIO PROCEDURAL
+# ==========================================================
+
+SAMPLE_RATE = 44100
+
+
+def nota_midi(nota):
+
+    return 440 * (
+        2 ** (
+            (nota - 69) / 12
+        )
+    )
+
+
+def onda(
+    frecuencia,
+    duracion,
+    volumen=0.15
+):
+
+    cantidad = int(
+        SAMPLE_RATE * duracion
+    )
+
+    t = (
+        list(
+            range(cantidad)
+        )
+    )
+
+    datos = []
+
+    for i in t:
+
+        tiempo = (
+            i / SAMPLE_RATE
+        )
+
+        envolvente = min(
+            1,
+            tiempo * 20
+        )
+
+        salida = (
+            math.sin(
+                2 *
+                math.pi *
+                frecuencia *
+                tiempo
+            )
+            *
+            volumen
+            *
+            envolvente
+        )
+
+        datos.append(
+            salida
+        )
+
+    return datos
+
+
+def crear_instrumental(
+    bpm,
+    compases=16
+):
+
+    beat = 60 / bpm
+
+    duracion = (
+        beat *
+        4 *
+        compases
+    )
+
+    cantidad = int(
+        SAMPLE_RATE *
+        duracion
+    )
+
+    audio = [
+        0.0
+    ] * cantidad
+
+    progresion = [
+        60,
+        55,
+        57,
+        53
+    ]
+
+    for compas in range(
+        compases
+    ):
+
+        raiz = progresion[
+            compas % 4
+        ]
+
+        inicio = int(
+            compas *
+            beat *
+            4 *
+            SAMPLE_RATE
+        )
+
+        for nota in [
+            raiz,
+            raiz + 4,
+            raiz + 7
+        ]:
+
+            sonido = onda(
+                nota_midi(nota),
+                beat * 3.5,
+                0.035
+            )
+
+            for i, valor in enumerate(
+                sonido
+            ):
+
+                posicion = (
+                    inicio + i
+                )
+
+                if posicion < cantidad:
+
+                    audio[
+                        posicion
+                    ] += valor
+
+        # Bajo
+
+        bajo = onda(
+            nota_midi(
+                raiz - 12
+            ),
+            beat * 0.8,
+            0.10
+        )
+
+        for repeticion in [
+            0,
+            2
+        ]:
+
+            inicio_bajo = (
+                inicio
+                +
+                int(
+                    repeticion *
+                    beat *
+                    SAMPLE_RATE
+                )
+            )
+
+            for i, valor in enumerate(
+                bajo
+            ):
+
+                posicion = (
+                    inicio_bajo + i
+                )
+
+                if posicion < cantidad:
+
+                    audio[
+                        posicion
+                    ] += valor
+
+    # Normalización
+
+    maximo = max(
+        abs(x)
+        for x in audio
+    ) or 1
+
+    audio = [
+        x / maximo * 0.85
+        for x in audio
+    ]
+
+    # WAV
+
+    memoria = io.BytesIO()
+
+    with wave.open(
+        memoria,
+        "wb"
+    ) as archivo:
+
+        archivo.setnchannels(1)
+
+        archivo.setsampwidth(2)
+
+        archivo.setframerate(
+            SAMPLE_RATE
+        )
+
+        datos = bytearray()
+
+        for x in audio:
+
+            entero = int(
+                max(
+                    -1,
+                    min(
+                        1,
+                        x
+                    )
+                )
+                * 32767
+            )
+
+            datos += entero.to_bytes(
+                2,
+                byteorder="little",
+                signed=True
+            )
+
+        archivo.writeframes(
+            datos
+        )
+
+    return memoria.getvalue()
+
+
+# ==========================================================
+# PROMPT MUSICAL
+# ==========================================================
+
+def prompt_musical(
+    titulo,
+    genero,
+    tema,
+    bpm,
+    intensidad
+):
 
     return f"""
-Professional {genero} production, {bpm} BPM,
-{mood} atmosphere, powerful emotional dynamics,
-modern professional mix, strong drums, deep bass,
-clear vocal space, cinematic transitions,
-dynamic arrangement, memorable chorus,
-high-impact intro, powerful bridge,
-radio-ready production.
+CREATE A PROFESSIONAL {genero.upper()} SONG.
 
-Song title: {titulo}
-Main theme: {tema}
-Intensity: {intensidad}/100.
+TITLE:
+{titulo}
 
-Create a professional arrangement with clear sections,
-strong emotional progression and a memorable climax.
+THEME:
+{tema}
+
+TEMPO:
+{bpm} BPM
+
+INTENSITY:
+{intensidad}/100
+
+STRUCTURE:
+
+INTRO
+VERSE 1
+PRE-CHORUS
+CHORUS
+VERSE 2
+BRIDGE
+FINAL CHORUS
+OUTRO
+
+PRODUCTION:
+
+Professional drums.
+Deep controlled bass.
+Clear harmonic foundation.
+Strong emotional dynamics.
+Modern arrangement.
+Wide stereo image.
+Powerful transitions.
+Memorable chorus.
+Professional vocal space.
+
+The arrangement must evolve progressively
+instead of staying at one energy level.
 """
 
 
-def generar_estructura(genero):
-
-    estructuras = {
-        "Worship": [
-            "Intro",
-            "Verso 1",
-            "Pre-Coro",
-            "Coro",
-            "Verso 2",
-            "Puente",
-            "Coro Final",
-            "Outro"
-        ],
-        "Rap": [
-            "Intro",
-            "Verso 1",
-            "Coro",
-            "Verso 2",
-            "Puente",
-            "Verso 3",
-            "Coro Final"
-        ],
-        "Trap": [
-            "Intro",
-            "Hook",
-            "Verso 1",
-            "Hook",
-            "Verso 2",
-            "Bridge",
-            "Hook Final"
-        ],
-        "Dembow": [
-            "Intro",
-            "Coro",
-            "Verso",
-            "Coro",
-            "Break",
-            "Coro Final"
-        ],
-        "Hip Hop": [
-            "Intro",
-            "Verso 1",
-            "Hook",
-            "Verso 2",
-            "Bridge",
-            "Verso 3",
-            "Hook Final"
-        ]
-    }
-
-    return estructuras.get(genero, estructuras["Rap"])
-
-
-def bpm_recomendado(genero):
-
-    valores = {
-        "Worship": "68–82 BPM",
-        "Rap": "82–96 BPM",
-        "Trap": "130–150 BPM",
-        "Dembow": "100–115 BPM",
-        "Hip Hop": "85–100 BPM"
-    }
-
-    return valores.get(genero, "90–100 BPM")
-
-
-# ============================================================
+# ==========================================================
 # SIDEBAR
-# ============================================================
+# ==========================================================
 
-st.sidebar.header("⚙️ CONFIGURACIÓN")
+st.sidebar.title("⚙️ OMEGA CONTROL")
 
-genero = st.sidebar.selectbox(
-    "🎵 Género",
-    [
-        "Worship",
-        "Rap",
-        "Trap",
-        "Dembow",
-        "Hip Hop"
-    ]
+modelo = st.sidebar.selectbox(
+    "🤖 Modelo local",
+    MODELOS
 )
 
-titulo = st.sidebar.text_input(
-    "🏷️ Título",
-    "Un Verdadero Adorador"
-)
-
-tema = st.sidebar.text_area(
-    "🎯 Tema principal",
-    "Una persona que adora a Dios de corazón y no solamente por apariencia."
-)
-
-mood = st.sidebar.selectbox(
-    "🎭 Mood",
-    [
-        "Espiritual",
-        "Épico",
-        "Emocional",
-        "Oscuro",
-        "Esperanzador",
-        "Triunfal",
-        "Introspectivo",
-        "Agresivo"
-    ]
-)
-
-intensidad = st.sidebar.slider(
-    "🔥 Intensidad",
+profundidad = st.sidebar.slider(
+    "🧠 Profundidad",
     1,
     100,
-    85
+    95
 )
 
-bpm_default = {
-    "Worship": 76,
-    "Rap": 90,
-    "Trap": 140,
-    "Dembow": 108,
-    "Hip Hop": 92
-}
-
-bpm = st.sidebar.number_input(
-    "🥁 BPM",
-    min_value=50,
-    max_value=200,
-    value=bpm_default[genero]
+atrevimiento = st.sidebar.slider(
+    "🚀 Exploración",
+    1,
+    100,
+    95
 )
 
-objetivo = st.sidebar.selectbox(
-    "🎯 Objetivo",
+if ollama_disponible():
+
+    st.sidebar.success(
+        "🟢 CEREBRO LOCAL ACTIVO"
+    )
+
+else:
+
+    st.sidebar.warning(
+        "🟡 CEREBRO LOCAL NO DETECTADO"
+    )
+
+
+# ==========================================================
+# INTERFAZ
+# ==========================================================
+
+st.markdown(
+    '<div class="omega-title">'
+    '🧠 CEREBRO OMEGA'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="omega-subtitle">'
+    'Laboratorio interdisciplinario experimental'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+
+tabs = st.tabs(
     [
-        "Impactar emocionalmente",
-        "Crear un himno",
-        "Viralizar",
-        "Predicar un mensaje",
-        "Motivar",
-        "Contar una historia",
-        "Crear una canción comercial"
+        "🌌 OMEGA",
+        "🧬 EVOLUCIÓN",
+        "💥 MUTACIÓN",
+        "🎵 MÚSICA",
+        "🔬 LABORATORIO",
+        "💾 MEMORIA"
     ]
 )
 
-# ============================================================
-# TABS
-# ============================================================
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🧠 CEREBRO",
-    "🎼 ESTRUCTURA",
-    "🔥 INTENSIDAD",
-    "🎧 PROMPT",
-    "💾 PROYECTO"
-])
+# ==========================================================
+# OMEGA
+# ==========================================================
 
-# ============================================================
-# TAB 1
-# ============================================================
+with tabs[0]:
 
-with tab1:
+    st.header(
+        "🌌 Director OMEGA"
+    )
 
-    st.header("🧠 Generador de Conceptos")
+    objetivo = st.text_area(
+        "¿Qué quieres descubrir, crear o resolver?",
+        "Crear una canción worship completamente nueva que conecte fe, evolución, conciencia y existencia."
+    )
 
-    st.write(
-        "Configura la canción y deja que CEREBRO construya "
-        "la dirección creativa."
+    contexto = st.text_area(
+        "Contexto adicional",
+        "Quiero explorar ciencia, biología, genética, evolución, filosofía, teología y simbolismo."
     )
 
     if st.button(
-        "🚀 ACTIVAR CEREBRO",
+        "🚀 ACTIVAR OMEGA",
         use_container_width=True
     ):
 
-        resultado = generar_concepto(
-            titulo,
-            genero,
-            tema,
-            intensidad,
-            bpm,
-            mood,
-            objetivo
+        with st.spinner(
+            "OMEGA está razonando..."
+        ):
+
+            respuesta = director_omega(
+                objetivo,
+                contexto,
+                modelo,
+                profundidad,
+                atrevimiento
+            )
+
+        st.session_state.respuesta = respuesta
+
+        guardar_memoria(
+            "exploracion",
+            respuesta
         )
 
-        st.session_state["resultado"] = resultado
-
-    if "resultado" in st.session_state:
+    if st.session_state.respuesta:
 
         st.text_area(
             "Resultado",
-            st.session_state["resultado"],
+            st.session_state.respuesta,
+            height=700
+        )
+
+
+# ==========================================================
+# EVOLUCIÓN
+# ==========================================================
+
+with tabs[1]:
+
+    st.header(
+        "🧬 Laboratorio Evolutivo"
+    )
+
+    generaciones = st.slider(
+        "Generaciones",
+        10,
+        500,
+        100
+    )
+
+    poblacion = st.slider(
+        "Población",
+        20,
+        5000,
+        500
+    )
+
+    seleccion = st.slider(
+        "Ventaja selectiva",
+        0.001,
+        0.5,
+        0.05
+    )
+
+    mutacion = st.slider(
+        "Mutación",
+        0.0,
+        0.2,
+        0.02
+    )
+
+    if st.button(
+        "🧬 EJECUTAR SIMULACIÓN"
+    ):
+
+        datos = evolucion_simulada(
+            generaciones,
+            poblacion,
+            seleccion,
+            mutacion
+        )
+
+        st.session_state.experimentos.append(
+            {
+                "tipo":
+                    "evolución",
+
+                "fecha":
+                    datetime.now().isoformat(),
+
+                "datos":
+                    datos
+            }
+        )
+
+        st.line_chart(
+            [
+                x["Frecuencia"]
+                for x in datos
+            ]
+        )
+
+        st.success(
+            "Simulación terminada."
+        )
+
+
+# ==========================================================
+# MUTACIÓN
+# ==========================================================
+
+with tabs[2]:
+
+    st.header(
+        "💥 Generador de posibilidades"
+    )
+
+    idea = st.text_area(
+        "Idea",
+        "Una IA que genere canciones completas."
+    )
+
+    cantidad = st.slider(
+        "Número de variantes",
+        2,
+        50,
+        10
+    )
+
+    if st.button(
+        "💥 MUTAR IDEA"
+    ):
+
+        resultado = mutar_idea(
+            idea,
+            cantidad
+        )
+
+        st.text_area(
+            "Variantes",
+            resultado,
             height=600
         )
 
-        st.download_button(
-            "⬇️ Descargar concepto",
-            st.session_state["resultado"],
-            file_name=f"{titulo.replace(' ', '_')}_concepto.txt",
-            mime="text/plain"
-        )
 
+# ==========================================================
+# MÚSICA
+# ==========================================================
 
-# ============================================================
-# TAB 2
-# ============================================================
+with tabs[3]:
 
-with tab2:
-
-    st.header("🎼 Arquitectura Musical")
-
-    st.info(
-        f"BPM recomendado para {genero}: "
-        f"{bpm_recomendado(genero)}"
+    st.header(
+        "🎵 Estudio Musical"
     )
 
-    estructura = generar_estructura(genero)
+    titulo = st.text_input(
+        "Título",
+        "Un Verdadero Adorador"
+    )
 
-    for i, parte in enumerate(estructura, 1):
+    genero = st.selectbox(
+        "Género",
+        [
+            "Worship",
+            "Rap",
+            "Trap",
+            "Hip Hop",
+            "Dembow",
+            "Cinemático"
+        ]
+    )
 
-        st.markdown(
-            f"### {i}. {parte}"
+    tema = st.text_area(
+        "Tema",
+        "Volver a Dios después de tocar fondo."
+    )
+
+    bpm = st.slider(
+        "BPM",
+        50,
+        180,
+        76
+    )
+
+    intensidad = st.slider(
+        "Intensidad",
+        1,
+        100,
+        90
+    )
+
+    if st.button(
+        "🎵 CREAR MOTOR MUSICAL",
+        use_container_width=True
+    ):
+
+        prompt = prompt_musical(
+            titulo,
+            genero,
+            tema,
+            bpm,
+            intensidad
         )
 
-        if parte == "Intro":
-            st.write(
-                "Crear identidad sonora y captar atención desde los primeros segundos."
-            )
+        st.session_state.ultimo_prompt = prompt
 
-        elif "Coro" in parte or "Hook" in parte:
-            st.write(
-                "Parte más memorable. Debe contener la frase central de la canción."
-            )
+        audio = crear_instrumental(
+            bpm
+        )
 
-        elif "Verso" in parte:
-            st.write(
-                "Desarrollar historia, mensaje, imágenes y rimas."
-            )
+        st.session_state.audio = audio
 
-        elif "Puente" in parte or "Bridge" in parte:
-            st.write(
-                "Cambiar la energía y preparar el momento de mayor impacto."
-            )
+        st.text_area(
+            "Prompt maestro",
+            prompt,
+            height=350
+        )
 
-        else:
-            st.write(
-                "Conectar musicalmente las diferentes secciones."
-            )
+    if st.session_state.audio:
+
+        st.audio(
+            st.session_state.audio,
+            format="audio/wav"
+        )
+
+        st.download_button(
+            "⬇️ DESCARGAR INSTRUMENTAL WAV",
+            st.session_state.audio,
+            file_name=
+                limpiar_nombre(
+                    titulo
+                ) + ".wav",
+            mime="audio/wav"
+        )
 
 
-# ============================================================
-# TAB 3
-# ============================================================
+# ==========================================================
+# LABORATORIO
+# ==========================================================
 
-with tab3:
+with tabs[4]:
 
-    st.header("🔥 Control de Intensidad")
+    st.header(
+        "🔬 Laboratorio de hipótesis"
+    )
 
-    nivel = intensidad
+    pregunta = st.text_area(
+        "Pregunta",
+        "¿Cómo podría estudiarse el origen de la complejidad?"
+    )
 
-    if nivel <= 25:
-        descripcion = "🌱 Suave / íntima"
+    if st.button(
+        "🔬 GENERAR EXPERIMENTO"
+    ):
 
-    elif nivel <= 50:
-        descripcion = "🎵 Moderada"
+        prompt = f"""
+Diseña un experimento intelectual/computacional
+para investigar:
 
-    elif nivel <= 75:
-        descripcion = "🔥 Potente"
+{pregunta}
 
-    elif nivel <= 90:
-        descripcion = "🚀 Muy potente"
+Incluye:
 
-    else:
-        descripcion = "💥 Máxima intensidad"
+1. Hipótesis.
+2. Variables.
+3. Datos necesarios.
+4. Método.
+5. Predicciones.
+6. Falsación.
+7. Limitaciones.
+8. Alternativas.
+9. Qué resultado apoyaría la hipótesis.
+10. Qué resultado la debilitaría.
+
+No inventes evidencia.
+"""
+
+        resultado = preguntar_ia(
+            prompt,
+            modelo
+        )
+
+        guardar_memoria(
+            "experimento",
+            resultado
+        )
+
+        st.text_area(
+            "Diseño experimental",
+            resultado,
+            height=650
+        )
+
+
+# ==========================================================
+# MEMORIA
+# ==========================================================
+
+with tabs[5]:
+
+    st.header(
+        "💾 Memoria OMEGA"
+    )
 
     st.metric(
-        "INTENSIDAD",
-        f"{nivel}/100",
-        descripcion
+        "Registros",
+        len(
+            st.session_state.memoria
+        )
     )
 
-    st.progress(nivel / 100)
-
-    st.write("### Dirección")
-
-    if nivel <= 40:
-        st.write(
-            "Usar instrumentos suaves, espacio vocal y dinámica controlada."
-        )
-
-    elif nivel <= 70:
-        st.write(
-            "Combinar partes íntimas con momentos de crecimiento."
-        )
-
-    elif nivel <= 90:
-        st.write(
-            "Baterías fuertes, bajos definidos, coros grandes y "
-            "transiciones marcadas."
-        )
-
-    else:
-        st.write(
-            "Máxima energía: drums grandes, bajos profundos, "
-            "capas instrumentales, coros masivos y climax cinematográfico."
-        )
-
-
-# ============================================================
-# TAB 4
-# ============================================================
-
-with tab4:
-
-    st.header("🎧 Prompt Profesional")
-
-    prompt = generar_prompt(
-        titulo,
-        genero,
-        tema,
-        intensidad,
-        bpm,
-        mood
-    )
-
-    st.text_area(
-        "Prompt",
-        prompt,
-        height=400
-    )
-
-    st.download_button(
-        "⬇️ Descargar Prompt",
-        prompt,
-        file_name=f"{titulo.replace(' ', '_')}_prompt.txt",
-        mime="text/plain"
-    )
-
-
-# ============================================================
-# TAB 5
-# ============================================================
-
-with tab5:
-
-    st.header("💾 Guardar Proyecto")
-
-    proyecto = {
-        "titulo": titulo,
-        "genero": genero,
-        "tema": tema,
-        "mood": mood,
-        "intensidad": intensidad,
-        "bpm": bpm,
-        "objetivo": objetivo,
-        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    st.json(proyecto)
-
-    archivo = json.dumps(
-        proyecto,
+    memoria_json = json.dumps(
+        st.session_state.memoria,
         ensure_ascii=False,
-        indent=4
+        indent=2
     )
 
     st.download_button(
-        "💾 GUARDAR PROYECTO",
-        archivo,
-        file_name=f"{titulo.replace(' ', '_')}_proyecto.json",
-        mime="application/json",
-        use_container_width=True
+        "💾 EXPORTAR MEMORIA",
+        memoria_json,
+        file_name="omega_memoria.json",
+        mime="application/json"
     )
 
+    if st.session_state.memoria:
 
-# ============================================================
+        for i, registro in enumerate(
+            reversed(
+                st.session_state.memoria
+            )
+        ):
+
+            with st.expander(
+                f"{i+1}. {registro['tipo']}"
+            ):
+
+                st.write(
+                    registro["fecha"]
+                )
+
+                st.write(
+                    registro["contenido"]
+                )
+
+
+# ==========================================================
 # PIE
-# ============================================================
+# ==========================================================
 
 st.divider()
 
 st.caption(
-    "🧠 CEREBRO RABINO PRO — Motor creativo musical"
-)
-
-st.caption(
-    "Diseñado para desarrollar conceptos, estructuras y prompts "
-    "para música profesional."
-)
+    "🧠 CEREBRO OMEGA v2 — "
+    "Lenguaje • Ciencia • Biología • Evolución • "
+    "Filosofía • Teología • Simbolismo • Música"
+        )pip install streamlit
