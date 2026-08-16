@@ -1,51 +1,51 @@
 import streamlit as st
 
-# 1. CONFIGURACIÓN BÁSICA
-st.set_page_config(page_title="CEREBRO RABINO v6.3", page_icon="🧠")
-st.title("🧠 CEREBRO RABINO HITMAKER v6.3")
-st.write("Tu historia. Tu unción. Yo solo te ayudo a traducirla.")
+st.set_page_config(page_title="CEREBRO RABINO v7.4", page_icon="🧠")
+st.title("CEREBRO RABINO HITMAKER v7.4")
 
-# 2. LO QUE TÚ ESCRIBES
-tema = st.text_input("¿De qué trata tu canción?")
-flow = st.selectbox("Elige tu Flow", ["🙌 WORSHIP", "🔥 RAP", "🎸 ALABANZA", "🎤 TRAP"])
+nombre_artista = st.text_input("Artist Name", "Rabino Rap")
+link_ref = st.text_input("Reference Link", "")
 
-# 3. LA IA TRADUCE TU IDEA A MÚSICA
-plantillas = {
-    "🙌 WORSHIP": {"bpm": "70", "style": "Worship piano guitar", "acordes": "G Em C D"},
-    "🔥 RAP": {"bpm": "90", "style": "Christian Rap 808", "acordes": "Am F C G"},
-    "🎸 ALABANZA": {"bpm": "110", "style": "Praise guitar cajon", "acordes": "C G Am F"},
-    "🎤 TRAP": {"bpm": "140", "style": "Christian Trap 808", "acordes": "Em C G D"}
-}
+tema = st.text_input("Song Topic", "Victoria en medio de dolor")
+flow = st.selectbox("Style", ["RAP Testimonio", "TRAP Profundo", "WORSHIP Rap"])
 
-# 4. BOTÓN QUE HACE TODO
-if st.button("🚀 CREAR AHORA"):
-    if tema == "":
-        st.warning("Escribe primero tu tema")
-    else:
-        p = plantillas[flow]
+if st.button("GENERATE", type="primary", use_container_width=True):
+    if tema:
+        prompt_suno = f"""[Style of Music]
+Artist: {nombre_artista}
+Genre: Christian Rap Spanish
+Vocals: {nombre_artista} male voice, Dominican accent, powerful
+Beat: {nombre_artista} type beat, 808, piano, strings
+BPM: 90
+Reference: {link_ref if link_ref else nombre_artista}
 
-        # LA IA ESCRIBE LA LETRA POR TI
-        letra = f"[Verse]\n{tema}\nDios está conmigo\n\n[Chorus]\nTe adoro Señor\nUn verdadero adorador"
+[Lyrics]
+[Intro] {nombre_artista}
+[Verse 1]
+{tema}
+[Chorus]
+Victoria victoria en medio del dolor
+{nombre_artista}
+[Outro] {nombre_artista}
 
-        # LA IA ESCRIBE EL PROMPT PARA SUNO
-        prompt_suno = f"{p['style']}, {p['bpm']} BPM, Spanish\n{letra}"
+[Title] {tema}
+"""
 
-        # LA IA ESCRIBE EL PROMPT PARA LA IMAGEN
-        prompt_img = f"Album cover, {flow}, text {tema}, professional, 3000x3000"
+        prompt_img = f"Album cover, artist {nombre_artista}, title {tema}, man hoodie dark cathedral golden cross, 3000x3000"
 
-        st.success("LISTO!")
-        st.text_area("LETRA", letra)
-        st.text_area("PROMPT SUNO", prompt_suno)
-        st.text_area("PROMPT IMAGEN", prompt_img)
-        st.info(f"ACORDES: {p['acordes']}")
+        st.text_area("SUNO PROMPT", prompt_suno, height=300)
+        st.text_area("IMAGE PROMPT", prompt_img, height=100)
 
-# 5. BOTONES PARA PUBLICAR
-st.divider()
-st.write("SUBE TU CANCIÓN:")
-col1, col2, col3 = st.columns(3)
-col1.link_button("TikTok", "https://tiktok.com/upload")
-col2.link_button("Instagram", "https://instagram.com")
-col3.link_button("YouTube", "https://youtube.com/upload")
-col1.link_button("Spotify", "https://artists.spotify.com")
-col2.link_button("Apple/iPhone", "https://artists.apple.com")
-col3.link_button("DistroKid", "https://distrokid.com")
+        st.divider()
+        c1, c2, c3 = st.columns(3)
+        c1.link_button("SUNO", "https://suno.com/")
+        c2.link_button("UDIO", "https://udio.com/")
+        c3.link_button("BING", "https://www.bing.com/images/create")
+        c4, c5, c6 = st.columns(3)
+        c4.link_button("TIKTOK", "https://www.tiktok.com/upload")
+        c5.link_button("INSTAGRAM", "https://www.instagram.com/")
+        c6.link_button("YOUTUBE", "https://studio.youtube.com/")
+        c7, c8, c9 = st.columns(3)
+        c7.link_button("SPOTIFY", "https://artists.spotify.com/")
+        c8.link_button("APPLE", "https://artists.apple.com/")
+        c9.link_button("DISTROKID", "https://distrokid.com/")
