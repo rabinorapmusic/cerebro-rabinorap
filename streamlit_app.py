@@ -1077,4 +1077,4 @@ st.caption(
     "🧠 CEREBRO OMEGA v2 — "
     "Lenguaje • Ciencia • Biología • Evolución • "
     "Filosofía • Teología • Simbolismo • Música"
-        )pip install streamlit
+        )
