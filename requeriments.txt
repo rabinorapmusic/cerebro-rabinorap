@@ -1,1 +1,2 @@
-pip install streamlitstreamlit run streamlit_app.py
+streamlit
+requestsollama pull llama3.2ollama servestreamlit run streamlit_app.py
