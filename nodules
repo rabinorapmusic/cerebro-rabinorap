@@ -46,4 +46,4 @@ class GenerationEngine:
                 )
             )
 
-        return results(
+        return results
