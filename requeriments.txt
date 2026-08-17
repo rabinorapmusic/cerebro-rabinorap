@@ -1,0 +1,4 @@
+# CEREBRO OMEGA — Dependencias fundamentales
+# Núcleo inicial: Python estándar, sin paquetes externos.
+
+# Python >= 3.11
