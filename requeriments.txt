@@ -1,3 +1,1 @@
-# CEREBRO OMEGA
-# OMEGA CORE — Dependencias externas
-# Núcleo fundacional: 0 dependencias externas
+streamlit>=1.40,<2.0
