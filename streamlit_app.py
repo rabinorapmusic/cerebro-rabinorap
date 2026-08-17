@@ -1,13 +1,8 @@
 import streamlit as st
 import random
+import statistics
 from dataclasses import dataclass, field
-from typing import List, Dict
 
-
-# ============================================================
-# 🧠 CEREBRO OMEGA
-# Núcleo evolutivo + motores fundamentales
-# ============================================================
 
 @dataclass
 class Possibility:
@@ -15,221 +10,214 @@ class Possibility:
     score: float = 0.0
     generation: int = 0
     origin: str = "generated"
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
-class GenerationEngine:
-    """Motor de generación."""
+class StatisticsEngine:
 
-    def __init__(self):
-        self.patterns = [
-            "Crear una solución nueva para",
-            "Resolver de forma eficiente",
-            "Encontrar una alternativa para",
-            "Diseñar una estrategia para",
-            "Experimentar con una forma diferente de",
-            "Automatizar una solución para",
-            "Combinar métodos para",
-            "Explorar una posibilidad inesperada para",
-            "Simplificar la solución de",
-            "Crear una versión avanzada de",
-        ]
+    def analyze(self, values):
+        if not values:
+            return {}
 
-    def generate(self, objective: str, amount: int, generation: int):
-        results = []
-
-        for _ in range(amount):
-            pattern = random.choice(self.patterns)
-
-            results.append(
-                Possibility(
-                    idea=f"{pattern} {objective}",
-                    generation=generation,
-                    origin="generated",
-                )
-            )
-
-        return results
+        return {
+            "mean": statistics.mean(values),
+            "median": statistics.median(values),
+            "maximum": max(values),
+            "minimum": min(values),
+        }
 
 
-class EvaluationEngine:
-    """Motor de evaluación."""
+class AlgorithmEngine:
 
-    def evaluate(self, possibilities: List[Possibility]):
-        for possibility in possibilities:
-            score = 0.45
-
-            length = len(possibility.idea)
-
-            if length > 50:
-                score += 0.10
-
-            if length > 90:
-                score += 0.10
-
-            if possibility.origin == "combined":
-                score += 0.15
-
-            if possibility.origin == "mutated":
-                score += 0.10
-
-            score += random.uniform(0.0, 0.20)
-
-            possibility.score = min(score, 1.0)
-
+    def rank(self, possibilities):
         return sorted(
             possibilities,
             key=lambda x: x.score,
             reverse=True,
         )
 
-
-class EvolutionEngine:
-    """Motor de combinación y mutación."""
-
-    def __init__(self):
-        self.variations = [
-            "más simple",
-            "más rápida",
-            "más creativa",
-            "más económica",
-            "más escalable",
-            "más experimental",
-            "más precisa",
-            "completamente diferente",
-        ]
-
-    def combine(
-        self,
-        first: Possibility,
-        second: Possibility,
-        generation: int,
-    ):
-        idea = (
-            f"Combinar [{first.idea}] "
-            f"con [{second.idea}]"
-        )
-
+    def combine(self, first, second, generation):
         return Possibility(
-            idea=idea,
+            idea=f"Combinar: {first.idea} + {second.idea}",
             generation=generation,
             origin="combined",
-            metadata={
-                "parents": [first.idea, second.idea]
-            },
         )
 
-    def mutate(
-        self,
-        possibility: Possibility,
-        generation: int,
-    ):
-        variation = random.choice(self.variations)
-
-        idea = (
-            f"Transformar [{possibility.idea}] "
-            f"haciéndolo {variation}"
-        )
+    def mutate(self, possibility, generation):
+        variations = [
+            "más simple",
+            "más potente",
+            "más creativa",
+            "más rápida",
+            "más precisa",
+            "más experimental",
+        ]
 
         return Possibility(
-            idea=idea,
+            idea=(
+                f"Transformar {possibility.idea} "
+                f"para hacerla {random.choice(variations)}"
+            ),
             generation=generation,
             origin="mutated",
-            metadata={
-                "parent": possibility.idea,
-                "variation": variation,
-            },
         )
+
+
+class MusicEngine:
+
+    def generate(self):
+        keys = [
+            "C", "D", "E", "F",
+            "G", "A", "B"
+        ]
+
+        scales = [
+            "Mayor",
+            "Menor",
+        ]
+
+        progressions = [
+            "I - V - vi - IV",
+            "vi - IV - I - V",
+            "I - vi - IV - V",
+            "i - VI - III - VII",
+        ]
+
+        return {
+            "bpm": random.randint(70, 150),
+            "key": random.choice(keys),
+            "scale": random.choice(scales),
+            "progression": random.choice(progressions),
+        }
 
 
 class OmegaCore:
-    """🧠 Coordinador central de OMEGA."""
 
     def __init__(self):
-        self.generator = GenerationEngine()
-        self.evaluator = EvaluationEngine()
-        self.evolution = EvolutionEngine()
+        self.statistics = StatisticsEngine()
+        self.algorithms = AlgorithmEngine()
+        self.music = MusicEngine()
 
         self.generation = 0
         self.history = []
 
-    def explore(
-        self,
-        objective: str,
-        amount: int = 8,
-        cycles: int = 3,
-    ):
-        self.generation = 0
-        self.history = []
+    def generate(self, objective, amount):
 
-        current = self.generator.generate(
-            objective,
-            amount,
-            self.generation,
+        patterns = [
+            "Crear una solución para",
+            "Encontrar una alternativa para",
+            "Diseñar una estrategia para",
+            "Explorar una posibilidad para",
+            "Construir una solución avanzada para",
+            "Experimentar con",
+            "Combinar métodos para",
+            "Descubrir una nueva forma de",
+        ]
+
+        results = []
+
+        for _ in range(amount):
+
+            results.append(
+                Possibility(
+                    idea=(
+                        f"{random.choice(patterns)} "
+                        f"{objective}"
+                    ),
+                    generation=self.generation,
+                )
+            )
+
+        return results
+
+    def evaluate(self, possibilities):
+
+        for possibility in possibilities:
+
+            score = random.uniform(0.45, 0.95)
+
+            if possibility.origin == "combined":
+                score += 0.05
+
+            if possibility.origin == "mutated":
+                score += 0.03
+
+            possibility.score = min(
+                score,
+                1.0
+            )
+
+        return self.algorithms.rank(
+            possibilities
         )
 
-        self.history.extend(current)
+    def cycle(self, objective, amount):
 
-        for _ in range(cycles):
-            self.generation += 1
+        self.generation += 1
 
-            new_possibilities = []
+        generated = self.generate(
+            objective,
+            amount,
+        )
 
-            evaluated = self.evaluator.evaluate(current)
+        evaluated = self.evaluate(
+            generated
+        )
 
-            best = evaluated[:max(2, len(evaluated) // 2)]
+        selected = evaluated[
+            :max(2, amount // 2)
+        ]
 
-            for possibility in best:
-                new_possibilities.append(
-                    self.evolution.mutate(
-                        possibility,
+        new_generation = []
+
+        for possibility in selected:
+
+            new_generation.append(
+                self.algorithms.mutate(
+                    possibility,
+                    self.generation,
+                )
+            )
+
+        if len(selected) >= 2:
+
+            for _ in range(
+                max(1, amount // 2)
+            ):
+
+                first, second = random.sample(
+                    selected,
+                    2,
+                )
+
+                new_generation.append(
+                    self.algorithms.combine(
+                        first,
+                        second,
                         self.generation,
                     )
                 )
 
-            if len(best) >= 2:
-                for _ in range(
-                    max(1, len(best) // 2)
-                ):
-                    first, second = random.sample(
-                        best,
-                        2,
-                    )
+        final = self.evaluate(
+            new_generation
+        )[:amount]
 
-                    new_possibilities.append(
-                        self.evolution.combine(
-                            first,
-                            second,
-                            self.generation,
-                        )
-                    )
+        self.history.extend(final)
 
-            evaluated_new = self.evaluator.evaluate(
-                new_possibilities
-            )
-
-            current = evaluated_new[:amount]
-
-            self.history.extend(current)
-
-        return self.evaluator.evaluate(current)
-
-    def status(self):
         return {
-            "sistema": "CEREBRO OMEGA",
-            "estado": "ONLINE",
-            "generacion": self.generation,
-            "posibilidades_exploradas": len(self.history),
-            "motores": [
-                "generación",
-                "evaluación",
-                "evolución",
-            ],
+            "generation": self.generation,
+            "generated": generated,
+            "selected": selected,
+            "results": final,
+            "statistics": self.statistics.analyze(
+                [x.score for x in final]
+            ),
+            "music": self.music.generate(),
         }
 
 
 # ============================================================
-# 🌐 INTERFAZ STREAMLIT
+# STREAMLIT
 # ============================================================
 
 st.set_page_config(
@@ -240,27 +228,12 @@ st.set_page_config(
 
 st.title("🧠 CEREBRO OMEGA ♾️")
 st.caption(
-    "Sistema evolutivo de exploración de posibilidades"
+    "Generador evolutivo de posibilidades"
 )
 
-st.divider()
-
-if "omega" not in st.session_state:
-    st.session_state.omega = OmegaCore()
-
-omega = st.session_state.omega
-
-
-# ============================================================
-# 🎯 ENTRADA
-# ============================================================
-
 objective = st.text_area(
-    "🎯 OBJETIVO",
-    placeholder=(
-        "Escribe algo que quieras explorar..."
-    ),
-    height=100,
+    "🎯 Objetivo",
+    placeholder="Escribe lo que quieres explorar..."
 )
 
 col1, col2 = st.columns(2)
@@ -268,64 +241,111 @@ col1, col2 = st.columns(2)
 with col1:
     amount = st.slider(
         "♾️ Posibilidades por ciclo",
-        min_value=4,
-        max_value=20,
-        value=8,
+        2,
+        20,
+        8,
     )
 
 with col2:
     cycles = st.slider(
         "🌀 Ciclos evolutivos",
-        min_value=1,
-        max_value=10,
-        value=3,
+        1,
+        10,
+        3,
     )
 
 
-# ============================================================
-# ⚡ ACTIVACIÓN
-# ============================================================
-
 if st.button(
-    "⚡ ACTIVAR CEREBRO OMEGA",
+    "⚡ EJECUTAR CEREBRO OMEGA",
     use_container_width=True,
 ):
 
     if not objective.strip():
 
         st.warning(
-            "⚠️ Introduce un objetivo."
+            "Escribe un objetivo."
         )
 
     else:
 
-        with st.spinner(
-            "🧠 OMEGA explorando posibilidades..."
-        ):
+        omega = OmegaCore()
 
-            results = omega.explore(
-                objective=objective,
-                amount=amount,
-                cycles=cycles,
+        for _ in range(cycles):
+
+            data = omega.cycle(
+                objective,
+                amount,
             )
 
-        st.success(
-            "♾️ Exploración completada."
-        )
+            st.divider()
 
-        st.subheader(
-            "🏆 Posibilidades seleccionadas"
-        )
+            st.subheader(
+                f"🌀 CICLO {data['generation']}"
+            )
 
-        for index, possibility in enumerate(
-            results,
-            start=1,
-        ):
+            c1, c2, c3 = st.columns(3)
 
-            with st.container():
+            with c1:
+                st.metric(
+                    "♾️ Generadas",
+                    len(data["generated"]),
+                )
 
-                st.markdown(
-                    f"### {index}. "
+            with c2:
+                st.metric(
+                    "🏆 Seleccionadas",
+                    len(data["selected"]),
+                )
+
+            with c3:
+                st.metric(
+                    "🧬 Nuevas",
+                    len(data["results"]),
+                )
+
+            st.markdown(
+                "### 📊 Estadística"
+            )
+
+            stats = data["statistics"]
+
+            st.write(
+                f"Promedio: **{stats['mean']:.2f}**"
+            )
+
+            st.write(
+                f"Máximo: **{stats['maximum']:.2f}**"
+            )
+
+            st.write(
+                f"Mínimo: **{stats['minimum']:.2f}**"
+            )
+
+            st.markdown(
+                "### 🎵 Motor musical"
+            )
+
+            music = data["music"]
+
+            st.write(
+                f"**BPM:** {music['bpm']}  |  "
+                f"**Tonalidad:** {music['key']} "
+                f"{music['scale']}  |  "
+                f"**Progresión:** "
+                f"{music['progression']}"
+            )
+
+            st.markdown(
+                "### ♾️ Posibilidades resultantes"
+            )
+
+            for number, possibility in enumerate(
+                data["results"],
+                1,
+            ):
+
+                st.write(
+                    f"**{number}.** "
                     f"{possibility.idea}"
                 )
 
@@ -334,52 +354,7 @@ if st.button(
                 )
 
                 st.caption(
-                    f"Generación: "
-                    f"{possibility.generation}  •  "
-                    f"Origen: "
-                    f"{possibility.origin}  •  "
-                    f"Puntuación: "
+                    f"Origen: {possibility.origin} "
+                    f"| Puntuación: "
                     f"{possibility.score:.2f}"
-                )
-
-                st.divider()
-
-
-# ============================================================
-# 📊 ESTADO DEL SISTEMA
-# ============================================================
-
-st.subheader("📊 Estado de OMEGA")
-
-status = omega.status()
-
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    st.metric(
-        "Estado",
-        status["estado"],
-    )
-
-with c2:
-    st.metric(
-        "Generación",
-        status["generacion"],
-    )
-
-with c3:
-    st.metric(
-        "Exploradas",
-        status["posibilidades_exploradas"],
-    )
-
-with st.expander("⚙️ Motores activos"):
-
-    for engine in status["motores"]:
-        st.write(f"⚙️ {engine}")
-
-st.divider()
-
-st.caption(
-    "☁️ CEREBRO OMEGA — Fundación Evolutiva"
-)
+        )
