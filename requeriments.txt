@@ -1,9 +1,0 @@
-📱 Termux
-   ↓
-🌐 Streamlit
-   ↓
-🧠 CEREBRO OMEGA
-   ↓
-🦙 Ollama
-   ↓
-🤖 llama3.2
