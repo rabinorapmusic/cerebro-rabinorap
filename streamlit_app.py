@@ -1,7 +1,6 @@
-Dios>07.70
-CEREBRO OMEGA
-OMEGA CORE — Núcleo Fundacional
-
+from modules.generation import GenerationEngine
+from modules.evaluation import EvaluationEngine
+cerebro/omega
 Principio:
     GENERAR → COMBINAR → MUTAR → EVALUAR → EVOLUCIONAR
 
