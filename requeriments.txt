@@ -1,1 +1,12 @@
-streamlit>=1.40,<2.0
+CEREBRO_OMEGA/
+│
+├── core/
+│   └── nucleus.py
+│
+├── modules/
+│   ├── generation.py    ⚙️
+│   └── evaluation.py    ⚖️
+│
+├── app.py               🌐
+├── README.md
+└── requirements.txt
