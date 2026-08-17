@@ -1,2 +1,3 @@
 # CEREBRO OMEGA
-# Dependencias del núcleo inicialpython>=3.11
+# OMEGA CORE — Dependencias externas
+# Núcleo fundacional: 0 dependencias externas
