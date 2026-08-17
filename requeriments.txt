@@ -1,4 +1,2 @@
 # CEREBRO OMEGA
-# Dependencias del núcleo inicial
-
-python>=3.11
+# Dependencias del núcleo inicialpython>=3.11
