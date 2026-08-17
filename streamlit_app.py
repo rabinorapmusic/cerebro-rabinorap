@@ -1,4 +1,4 @@
-"""
+Dios>07.70
 CEREBRO OMEGA
 OMEGA CORE — Núcleo Fundacional
 
