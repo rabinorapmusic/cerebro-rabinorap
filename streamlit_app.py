@@ -7,9 +7,10 @@ import random
 from pathlib import Path
 from datetime import datetime, timezone
 
+
 # ============================================================
 # 🧠 CEREBRO OMEGA ♾️
-# UN SOLO ARCHIVO — ORGANISMO MODULAR
+# ORGANISMO MODULAR — ARCHIVO ÚNICO
 # ============================================================
 
 st.set_page_config(
@@ -37,9 +38,7 @@ def load_json(path, default):
     try:
         if path.exists():
             return json.loads(
-                path.read_text(
-                    encoding="utf-8"
-                )
+                path.read_text(encoding="utf-8")
             )
     except Exception:
         pass
@@ -63,8 +62,7 @@ def save_json(path, data):
 
 
 # ============================================================
-# ⚛️ PROTÓN
-# MOTOR DE CONOCIMIENTO
+# ⚛️ PROTÓN — MOTOR DE CONOCIMIENTO
 # ============================================================
 
 class Proton:
@@ -91,6 +89,11 @@ class Proton:
         try:
 
             self.knowledge.setdefault(
+                "facts",
+                {}
+            )
+
+            self.knowledge.setdefault(
                 "learned",
                 {}
             )
@@ -101,13 +104,16 @@ class Proton:
                 "time": now()
             }
 
-            save_json(
+            saved = save_json(
                 KNOWLEDGE_FILE,
                 self.knowledge
             )
 
+            if not saved:
+                self.status = "DEGRADED"
+
             return {
-                "success": True,
+                "success": saved,
                 "topic": topic
             }
 
@@ -180,8 +186,7 @@ class Proton:
 
 
 # ============================================================
-# ⚡ ELECTRÓN
-# MOTOR DE EJECUCIÓN
+# ⚡ ELECTRÓN — MOTOR DE EJECUCIÓN
 # ============================================================
 
 class Electron:
@@ -208,8 +213,7 @@ class Electron:
                 "success": True,
                 "action": action,
                 "payload": payload,
-                "execution":
-                    self.executions
+                "execution": self.executions
             }
 
             return self.last_result
@@ -228,14 +232,12 @@ class Electron:
         return {
             "status": self.status,
             "executions": self.executions,
-            "last_action":
-                self.last_action
+            "last_action": self.last_action
         }
 
 
 # ============================================================
-# 🌀 NEUTRÓN
-# MOTOR DE MEMORIA
+# 🌀 NEUTRÓN — MOTOR DE MEMORIA
 # ============================================================
 
 class Neutron:
@@ -267,13 +269,16 @@ class Neutron:
 
             self.memory = self.memory[-2000:]
 
-            save_json(
+            saved = save_json(
                 MEMORY_FILE,
                 self.memory
             )
 
+            if not saved:
+                self.status = "DEGRADED"
+
             return {
-                "success": True,
+                "success": saved,
                 "record": record
             }
 
@@ -329,8 +334,7 @@ class Neutron:
 
         return {
             "status": self.status,
-            "memories":
-                len(self.memory)
+            "memories": len(self.memory)
         }
 
 
@@ -536,6 +540,7 @@ class MusicEngine:
 
 # ============================================================
 # ♾️ MOTOR EVOLUTIVO
+# CICLOS CON MEMORIA Y APRENDIZAJE
 # ============================================================
 
 class EvolutionEngine:
@@ -544,11 +549,83 @@ class EvolutionEngine:
 
         self.status = "ACTIVE"
         self.cycles = []
+        self.best_result = None
+        self.evolution_memory = []
+
+    # --------------------------------------------------------
+    # EVALUACIÓN
+    # --------------------------------------------------------
+
+    def evaluate(
+        self,
+        objective,
+        idea,
+        previous_selected=None
+    ):
+
+        objective_words = set(
+            re.findall(
+                r"[a-záéíóúñü]{4,}",
+                objective.lower()
+            )
+        )
+
+        idea_words = set(
+            re.findall(
+                r"[a-záéíóúñü]{4,}",
+                idea.lower()
+            )
+        )
+
+        overlap = len(
+            objective_words.intersection(
+                idea_words
+            )
+        )
+
+        relevance = min(
+            overlap * 0.08,
+            0.30
+        )
+
+        memory_bonus = 0.0
+
+        if previous_selected:
+
+            previous_ideas = [
+                item.get("idea", "")
+                for item in previous_selected
+            ]
+
+            if idea in previous_ideas:
+                memory_bonus = 0.10
+
+        variation = random.uniform(
+            0.05,
+            0.18
+        )
+
+        score = (
+            0.55
+            + relevance
+            + memory_bonus
+            + variation
+        )
+
+        return round(
+            min(score, 0.99),
+            2
+        )
+
+    # --------------------------------------------------------
+    # GENERADOR
+    # --------------------------------------------------------
 
     def possibility(
         self,
         objective,
-        bpm
+        bpm,
+        previous_selected=None
     ):
 
         ideas = [
@@ -570,50 +647,73 @@ class EvolutionEngine:
             "Crear una interpretación profunda y espiritual"
         ]
 
+        # ----------------------------------------------------
+        # INTENTAR EVOLUCIONAR DESDE LOS RESULTADOS ANTERIORES
+        # ----------------------------------------------------
+
+        if previous_selected and random.random() < 0.65:
+
+            parent = random.choice(
+                previous_selected
+            )
+
+            idea = parent["idea"]
+
+        else:
+
+            idea = random.choice(
+                ideas
+            )
+
+        score = self.evaluate(
+            objective,
+            idea,
+            previous_selected
+        )
+
         return {
-            "idea":
-                random.choice(ideas),
-
-            "BPM":
-                bpm,
-
-            "score":
-                round(
-                    random.uniform(
-                        0.55,
-                        0.99
-                    ),
-                    2
-                ),
-
-            "objective":
-                objective
+            "idea": idea,
+            "BPM": bpm,
+            "score": score,
+            "objective": objective
         }
+
+    # --------------------------------------------------------
+    # EVOLUCIÓN PRINCIPAL
+    # --------------------------------------------------------
 
     def evolve(
         self,
         objective,
         bpm=72,
         possibilities=8,
-        cycles=4
+        cycles=4,
+        proton=None,
+        neutron=None
     ):
 
         history = []
+
+        previous_selected = []
 
         for cycle_number in range(
             1,
             cycles + 1
         ):
 
-            generated = [
-                self.possibility(
-                    objective,
-                    bpm
+            generated = []
+
+            for _ in range(
+                possibilities
+            ):
+
+                generated.append(
+                    self.possibility(
+                        objective,
+                        bpm,
+                        previous_selected
+                    )
                 )
-                for _ in range(
-                    possibilities
-                )
-            ]
 
             generated.sort(
                 key=lambda x:
@@ -633,7 +733,8 @@ class EvolutionEngine:
                 2
             )
 
-            history.append({
+            cycle_result = {
+
                 "cycle":
                     cycle_number,
 
@@ -651,9 +752,87 @@ class EvolutionEngine:
 
                 "minimum":
                     generated[-1]["score"]
-            })
+            }
+
+            history.append(
+                cycle_result
+            )
+
+            # ------------------------------------------------
+            # ⚛️ PROTÓN APRENDE
+            # ------------------------------------------------
+
+            if proton:
+
+                topic = (
+                    "evolution_cycle_"
+                    + str(cycle_number)
+                    + "_"
+                    + str(
+                        abs(hash(objective)) % 100000
+                    )
+                )
+
+                information = {
+                    "objective": objective,
+                    "bpm": bpm,
+                    "cycle": cycle_number,
+                    "selected": selected,
+                    "average": average,
+                    "best_score":
+                        generated[0]["score"]
+                }
+
+                proton.learn(
+                    topic,
+                    information,
+                    source="evolution"
+                )
+
+            # ------------------------------------------------
+            # 🌀 NEUTRÓN GUARDA EXPERIENCIA
+            # ------------------------------------------------
+
+            if neutron:
+
+                neutron.remember(
+                    "CICLO_EVOLUTIVO_"
+                    + str(cycle_number),
+                    cycle_result
+                )
+
+            # ------------------------------------------------
+            # EL SIGUIENTE CICLO RECIBE
+            # LOS MEJORES RESULTADOS
+            # ------------------------------------------------
+
+            previous_selected = selected
+
+        # ----------------------------------------------------
+        # MEJOR RESULTADO GLOBAL
+        # ----------------------------------------------------
+
+        all_selected = []
+
+        for cycle in history:
+
+            all_selected.extend(
+                cycle["selected"]
+            )
+
+        if all_selected:
+
+            self.best_result = max(
+                all_selected,
+                key=lambda x:
+                    x["score"]
+            )
 
         self.cycles = history
+
+        self.evolution_memory = (
+            previous_selected
+        )
 
         return history
 
@@ -790,7 +969,6 @@ class ReasonEngine:
 
 # ============================================================
 # 🔊 VOICE BRIDGE
-# NO usa st.components.v2.html()
 # ============================================================
 
 def voice_bridge(text):
@@ -929,26 +1107,20 @@ def voice_bridge(text):
         }}
 
         utterance.rate = 0.92;
-
-        // Voz más grave.
         utterance.pitch = 0.72;
-
         utterance.volume = 1.0;
 
         utterance.onstart = () => {{
-
             status.innerText =
                 "🎙️ VOICE: OMEGA HABLANDO";
         }};
 
         utterance.onend = () => {{
-
             status.innerText =
                 "✅ VOICE: LISTO";
         }};
 
         utterance.onerror = event => {{
-
             status.innerText =
                 "⚠️ VOICE: " +
                 event.error;
@@ -984,14 +1156,11 @@ def voice_bridge(text):
     </script>
     """
 
-    # IMPORTANTE:
-    # Esta es la corrección del AttributeError.
     st.html(component)
 
 
 # ============================================================
-# 🧠 CEREBRO OMEGA
-# COORDINADOR
+# 🧠 CEREBRO OMEGA — COORDINADOR
 # ============================================================
 
 class CerebroOmega:
@@ -999,21 +1168,15 @@ class CerebroOmega:
     def __init__(self):
 
         self.proton = Proton()
-
         self.electron = Electron()
-
         self.neutron = Neutron()
 
         self.language = LanguageEngine()
-
         self.bible = BibleEngine()
-
         self.music = MusicEngine()
-
         self.evolution = EvolutionEngine()
 
         self.intent = IntentEngine()
-
         self.reason = ReasonEngine()
 
         self.cycles = 0
@@ -1025,18 +1188,21 @@ class CerebroOmega:
 
         self.cycles += 1
 
-        # ⚡ ELECTRÓN recibe TODA orden.
-        electron_result = \
-            self.electron.execute(
-                "PROCESS_INPUT",
-                user_input
-            )
+        # ----------------------------------------------------
+        # ⚡ ELECTRÓN ARRANCA LA ORDEN
+        # ----------------------------------------------------
+
+        electron_result = self.electron.execute(
+            "PROCESS_INPUT",
+            user_input
+        )
 
         if not electron_result["success"]:
 
-            # El fallo de Electrón no mata
-            # los demás módulos.
-            pass
+            return {
+                "text":
+                "⚠️ Electrón no pudo ejecutar la orden."
+            }
 
         action = self.intent.detect(
             user_input
@@ -1048,10 +1214,9 @@ class CerebroOmega:
 
         if action == "BIBLE":
 
-            reference = \
-                extract_bible_reference(
-                    user_input
-                )
+            reference = extract_bible_reference(
+                user_input
+            )
 
             if not reference:
 
@@ -1061,10 +1226,9 @@ class CerebroOmega:
                     "Ejemplo: Juan 3:16."
                 }
 
-            result = \
-                self.bible.get_passage(
-                    reference
-                )
+            result = self.bible.get_passage(
+                reference
+            )
 
             if result["success"]:
 
@@ -1098,10 +1262,9 @@ class CerebroOmega:
                 user_input
             )
 
-            text = \
-                extract_translation_text(
-                    user_input
-                )
+            text = extract_translation_text(
+                user_input
+            )
 
             if not text:
 
@@ -1111,11 +1274,10 @@ class CerebroOmega:
                     "traducir y el idioma."
                 }
 
-            result = \
-                self.language.translate(
-                    text,
-                    target=target
-                )
+            result = self.language.translate(
+                text,
+                target=target
+            )
 
             if result["success"]:
 
@@ -1142,11 +1304,10 @@ class CerebroOmega:
 
         if action == "MEMORY":
 
-            memories = \
-                self.neutron.recall(
-                    None,
-                    10
-                )
+            memories = self.neutron.recall(
+                None,
+                10
+            )
 
             if not memories:
 
@@ -1181,15 +1342,14 @@ class CerebroOmega:
             }
 
         # ====================================================
-        # 🧬 APRENDIZAJE
+        # 🧬 APRENDIZAJE MANUAL
         # ====================================================
 
         if action == "LEARN":
 
-            topic, information = \
-                extract_learning(
-                    user_input
-                )
+            topic, information = extract_learning(
+                user_input
+            )
 
             if not topic:
 
@@ -1213,8 +1373,7 @@ class CerebroOmega:
 
                 return {
                     "text":
-                    f"⚛️ Protón aprendió: "
-                    f"{topic}"
+                    f"⚛️ Protón aprendió: {topic}"
                 }
 
             return {
@@ -1224,7 +1383,7 @@ class CerebroOmega:
             }
 
         # ====================================================
-        # 🎵 MÚSICA / EVOLUCIÓN
+        # 🎵 MÚSICA + EVOLUCIÓN REAL
         # ====================================================
 
         if action == "MUSIC":
@@ -1233,26 +1392,57 @@ class CerebroOmega:
                 user_input
             )
 
-            history = \
-                self.evolution.evolve(
-                    user_input,
-                    bpm=bpm,
-                    possibilities=8,
-                    cycles=4
+            history = self.evolution.evolve(
+                user_input,
+                bpm=bpm,
+                possibilities=8,
+                cycles=4,
+                proton=self.proton,
+                neutron=self.neutron
+            )
+
+            plan = self.music.create_plan(
+                bpm
+            )
+
+            response = build_music_response(
+                user_input,
+                history,
+                plan,
+                bpm
+            )
+
+            learned_count = len(
+                self.proton.knowledge.get(
+                    "learned",
+                    {}
+                )
+            )
+
+            memory_count = len(
+                self.neutron.memory
+            )
+
+            best_score = "N/A"
+
+            if self.evolution.best_result:
+
+                best_score = str(
+                    self.evolution.best_result.get(
+                        "score",
+                        "N/A"
+                    )
                 )
 
-            plan = \
-                self.music.create_plan(
-                    bpm
-                )
-
-            response = \
-                build_music_response(
-                    user_input,
-                    history,
-                    plan,
-                    bpm
-                )
+            response += (
+                "\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "🧠 ESTADO EVOLUTIVO\n"
+                f"⚛️ Aprendizajes: {learned_count}\n"
+                f"🌀 Memorias: {memory_count}\n"
+                f"🏆 Mejor posibilidad: {best_score}\n"
+                "🔗 CICLOS CONECTADOS: ACTIVOS"
+            )
 
             self.neutron.remember(
                 user_input,
@@ -1264,26 +1454,23 @@ class CerebroOmega:
             }
 
         # ====================================================
-        # 🧠 CHAT + PROTÓN + NEUTRÓN
+        # 🧠 CHAT
         # ====================================================
 
-        knowledge = \
-            self.proton.search(
-                user_input
-            )
+        knowledge = self.proton.search(
+            user_input
+        )
 
-        memories = \
-            self.neutron.recall(
-                user_input,
-                5
-            )
+        memories = self.neutron.recall(
+            user_input,
+            5
+        )
 
-        response = \
-            self.reason.reason(
-                user_input,
-                knowledge,
-                memories
-            )
+        response = self.reason.reason(
+            user_input,
+            knowledge,
+            memories
+        )
 
         self.neutron.remember(
             user_input,
@@ -1424,6 +1611,7 @@ def extract_translation_text(text):
         )
 
         if match:
+
             return match.group(1).strip()
 
     return None
@@ -1574,6 +1762,29 @@ def build_music_response(
     output.append("")
 
     output.append(
+        "🧬 MOTOR EVOLUTIVO"
+    )
+
+    output.append(
+        "Ciclo siguiente recibe "
+        "resultados del ciclo anterior."
+    )
+
+    output.append(
+        "⚛️ Protón: aprendizaje activo"
+    )
+
+    output.append(
+        "🌀 Neutrón: memoria activa"
+    )
+
+    output.append(
+        "⚡ Electrón: ejecución activa"
+    )
+
+    output.append("")
+
+    output.append(
         "🔒 REGLA DEL CICLO:"
     )
 
@@ -1591,8 +1802,8 @@ def build_music_response(
 
 if "omega" not in st.session_state:
 
-    st.session_state.omega = \
-        CerebroOmega()
+    st.session_state.omega = CerebroOmega()
+
 
 if "last_response" not in st.session_state:
 
@@ -1625,36 +1836,42 @@ status = omega.status()
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 
 with c1:
+
     st.metric(
         "🧠 CEREBRO",
         status["🧠 CEREBRO"]
     )
 
 with c2:
+
     st.metric(
         "⚛️ PROTÓN",
         status["⚛️ PROTÓN"]["status"]
     )
 
 with c3:
+
     st.metric(
         "⚡ ELECTRÓN",
         status["⚡ ELECTRÓN"]["status"]
     )
 
 with c4:
+
     st.metric(
         "🌀 NEUTRÓN",
         status["🌀 NEUTRÓN"]["status"]
     )
 
 with c5:
+
     st.metric(
         "🎵 MÚSICA",
         status["🎵 MUSIC"]
     )
 
 with c6:
+
     st.metric(
         "🔊 VOICE",
         "READY"
@@ -1685,6 +1902,10 @@ user_input = st.text_area(
 )
 
 
+# ============================================================
+# EJECUTAR
+# ============================================================
+
 if st.button(
     "🧠 EJECUTAR ORDEN",
     type="primary",
@@ -1695,8 +1916,9 @@ if st.button(
 
         with st.spinner(
             "⚡ Electrón ejecutando • "
-            "⚛️ Protón procesando • "
-            "🌀 Neutrón recordando..."
+            "⚛️ Protón aprendiendo • "
+            "🌀 Neutrón recordando • "
+            "♾️ Omega evolucionando..."
         ):
 
             try:
@@ -1775,8 +1997,7 @@ if omega.evolution.cycles:
         "♾️ CICLOS EVOLUTIVOS"
     ):
 
-        for cycle in \
-            omega.evolution.cycles:
+        for cycle in omega.evolution.cycles:
 
             st.markdown(
                 f"### 🌀 CICLO "
@@ -1798,11 +2019,20 @@ if omega.evolution.cycles:
                 f"{cycle['average']}"
             )
 
-            for item in \
-                cycle["selected"]:
+            st.write(
+                f"Máximo: "
+                f"{cycle['maximum']}"
+            )
+
+            st.write(
+                f"Mínimo: "
+                f"{cycle['minimum']}"
+            )
+
+            for item in cycle["selected"]:
 
                 st.write(
                     f"🧬 {item['idea']} — "
                     f"{item['BPM']} BPM — "
                     f"⭐ {item['score']}"
-                )
+            )
