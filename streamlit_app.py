@@ -1,63 +1,72 @@
 import streamlit as st
 import requests
+import json
+import os
 
-st.set_page_config(page_title="CEREBRO OMEGA", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="CEREBRO OMEGA", page_icon="🧠")
 
-def motor_bible(tema):
+ARCHIVO = "memoria.json"
+
+def cargar():
+    if os.path.exists(ARCHIVO):
+        with open(ARCHIVO, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def guardar(mem):
+    with open(ARCHIVO, "w", encoding="utf-8") as f:
+        json.dump(mem, f, ensure_ascii=False, indent=2)
+
+if "mem" not in st.session_state:
+    st.session_state.mem = cargar()
+
+def bible(tema):
     try:
-        r = requests.get(f"https://bible-api.com/?q={tema}&translation=rvr1960", timeout=4).json()
-        return f"📖 {r['reference']}: {r['text'][:300]}"
+        r = requests.get(f"https://bible-api.com/?q={tema}&translation=rvr1960", timeout=3).json()
+        return f"📖 {r['reference']}: {r['text'][:250]}"
     except:
-        return "📖 [Juan 3:16] Porque de tal manera amó Dios al mundo"
+        return ""
 
-def motor_knowledge(tema):
-    if "amor" in tema.lower() and "dios" in tema.lower():
-        return "🧠 CONOCIMIENTO: El amor de Dios es ágape. Incondicional, eterno, que da sin esperar. La ciencia lo mide como oxitocina + apego, pero la fe dice que viene de Dios."
-    elif "vida" in tema.lower():
-        return "🧠 CONOCIMIENTO: La vida según ciencia: 3.8 mil millones de años de evolución. Según Torah: Dios sopló aliento. Ambas hablan de algo sagrado y complejo."
-    else:
-        return f"🧠 CONOCIMIENTO: Analizando {tema}. La ciencia busca el cómo. La fe busca el por qué."
-
-def motor_reasoning(bible, knowledge):
-    return f"💡 RAZONAMIENTO: {bible} + {knowledge} = La conclusión es que fe y ciencia no se pelean. Se complementan."
+def knowledge(tema):
+    for k in st.session_state.mem:
+        if k in tema.lower():
+            return f"🧠 {st.session_state.mem[k]}"
+    return f"🧠 Analizando: {tema}"
 
 def hablar(texto):
     js = f"""
     <script>
     function hablar() {{
         speechSynthesis.cancel();
-        var msg = new SpeechSynthesisUtterance(`{texto.replace('`','').replace('"','')}`);
+        var msg = new SpeechSynthesisUtterance(`{texto.replace('`','')}`);
         msg.lang = 'es-MX';
-        msg.rate = 0.88;
+        msg.rate = 0.85;
+        msg.pitch = 0.6;
         speechSynthesis.speak(msg);
     }}
+    hablar();
     </script>
-    <button onclick="hablar()" style="background:#FF4B4B;color:white;border:none;padding:14px 24px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;width:100%;">
-    🔊 CEREBRO HABLA
-    </button>
+    <button onclick="hablar()">🔊 REPETIR</button>
     """
-    st.components.v1.html(js, height=55)
+    st.components.v1.html(js, height=50)
 
-st.title("🧠 CEREBRO OMEGA v2.1")
-st.caption("CORE MONOLÍTICO • CONOCIMIENTO • MEMORIA • EVOLUCIÓN")
+st.title("🧠 CEREBRO OMEGA")
 
-orden = st.text_area("🎯 ORDEN PARA CEREBRO", "", height=120)
+orden = st.text_area("ORDEN", height=100)
 
-if st.button("🚀 EJECUTAR CEREBRO", type="primary", use_container_width=True):
-    b = motor_bible(orden)
-    k = motor_knowledge(orden)
-    r = motor_reasoning(b, k)
-    
-    res = f"🧠 ANÁLISIS DE CEREBRO OMEGA\nOrden: {orden}\n\n{b}\n\n{k}\n\n{r}\n\n✅ CICLO COMPLETO - 100%"
-    st.session_state["res"] = res
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("EJECUTAR", use_container_width=True):
+        b = bible(orden)
+        k = knowledge(orden)
+        res = f"{b}\n\n{k}"
+        st.session_state.res = res
+with col2:
+    palabra = st.text_input("ENSEÑAR")
+    if st.button("GUARDAR", use_container_width=True) and palabra:
+        st.session_state.mem[palabra.lower()] = orden
+        guardar(st.session_state.mem)
 
 if "res" in st.session_state:
-    st.success("RESPUESTA DE CEREBRO OMEGA")
-    st.text(st.session_state["res"])
-    hablar(st.session_state["res"])
-    
-    st.divider()
-    st.subheader("🔄 ÚLTIMO CICLO EVOLUTIVO")
-    st.metric("Estado", "CICLO COMPLETO")
-    st.metric("Eficiencia", "100%")
-    st.code("bible, knowledge, memory, reasoning")
+    st.text(st.session_state.res)
+    hablar(st.session_state.res)
