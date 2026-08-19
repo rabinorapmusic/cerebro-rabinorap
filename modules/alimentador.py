@@ -9,29 +9,29 @@ IMPORTANTE:
 Este módulo NO modifica el núcleo.
 """
 
-import requests
-import re
-from datetime import datetime
+impor requests
+importre
+fro datetime importdatetime
 
 
-class AlimentadorOmega:
+clas AlimentadorOmega:
 
     VERSION = "1.0.0"
     NOMBRE = "ALIMENTADOR OMEGA"
 
-    def __init__(self):
+    def__init__(self):
         self.fuente = "Wikipedia"
         self.experiencias = []
 
-    def limpiar(self, texto):
+    deflimpiar(self, texto):
         """Limpia espacios y caracteres innecesarios."""
-        if not texto:
-            return ""
+        i no texto:
+            retur ""
 
         texto = re.sub(r"\s+", " ", texto)
-        return texto.strip()
+        retur texto.strip()
 
-    def buscar(self, concepto, idioma="es"):
+    de buscar(self, concepto, idioma="es"):
         """
         Busca información sobre un concepto en Wikipedia.
 
@@ -40,15 +40,15 @@ class AlimentadorOmega:
 
         concepto = self.limpiar(concepto)
 
-        if not concepto:
-            return {
+        i no concepto:
+            retur {
                 "ok": False,
                 "error": "No se recibió ningún concepto."
             }
 
         url = f"https://{idioma}.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(concepto)}"
 
-        try:
+        tr:
             respuesta = requests.get(
                 url,
                 timeout=10,
@@ -57,8 +57,8 @@ class AlimentadorOmega:
                 }
             )
 
-            if respuesta.status_code != 200:
-                return {
+            ifrespuesta.status_code != 200:
+                retur {
                     "ok": False,
                     "error": f"No se encontró información sobre: {concepto}"
                 }
@@ -84,44 +84,45 @@ class AlimentadorOmega:
                 "fecha": datetime.now().isoformat()
             })
 
-            return {
+            retur {
                 "ok": True,
                 "conocimiento": conocimiento
             }
 
-        except requests.RequestException as e:
+        exceptrequests.RequestException a e:
 
-            return {
+            retur {
                 "ok": False,
                 "error": f"Error de conexión: {str(e)}"
             }
 
-        except Exception as e:
+        exceptException ase:
 
-            return {
+            retur {
                 "ok": False,
                 "error": f"Error procesando conocimiento: {str(e)}"
             }
 
-    def preparar_para_memoria(self, resultado):
+    de
+preparar_para_memoria(self, resultado):
         """
         Convierte el resultado en un formato sencillo
         que el sistema de memoria puede guardar.
         """
 
-        if not resultado.get("ok"):
-            return None
+        i notresultado.get("ok"):
+            retur Non
 
         conocimiento = resultado["conocimiento"]
 
-        return {
+        retur {
             "concepto": conocimiento["concepto"].lower(),
             "informacion": conocimiento["informacion"],
             "fuente": conocimiento["fuente"],
             "fecha": conocimiento["fecha"]
         }
 
-    def alimentar(self, concepto, idioma="es"):
+    de alimentar(self, concepto, idioma="es"):
         """
         Flujo completo:
 
@@ -136,12 +137,12 @@ class AlimentadorOmega:
 
         resultado = self.buscar(concepto, idioma)
 
-        if not resultado["ok"]:
-            return resultado
+        i notresultado["ok"]:
+            retur resultado
 
         memoria = self.preparar_para_memoria(resultado)
 
-        return {
+        retur {
             "ok": True,
             "accion": "conocimiento_preparado",
             "memoria": memoria,
@@ -151,4 +152,4 @@ class AlimentadorOmega:
 
 def crear_modulo():
     """Punto de entrada estándar del módulo."""
-    return AlimentadorOmega()
+    retur AlimentadorOmega()
