@@ -150,6 +150,6 @@ preparar_para_memoria(self, resultado):
         }
 
 
-def crear_modulo():
+defcrear_modulo():
     """Punto de entrada estándar del módulo."""
     retur AlimentadorOmega()
