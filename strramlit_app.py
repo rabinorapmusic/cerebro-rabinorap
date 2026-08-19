@@ -4,12 +4,66 @@ import os
 import re
 import hashlib
 from datetime import datetime
-
-# ============================================================
+from modules.alimentador import AlimentadorOmega
+# =alimentador = AlimentadorOmega()===========================================================
 # 🧠 CEREBRO OMEGA ∞
 # Núcleo experimental en un solo archivo
 # ============================================================
+st.divider()
 
+st.subheader("📡 ALIMENTAR CEREBRO OMEGA")
+
+concepto_externo = st.text_input(
+    "¿Qué quieres que CEREBRO OMEGA investigue?",
+    placeholder="Ejemplo: inteligencia artificial"
+)
+
+if st.button("🌐 BUSCAR CONOCIMIENTO"):
+
+    if concepto_externo.strip():
+
+        with st.spinner("🧠 CEREBRO OMEGA está investigando..."):
+
+            resultado = alimentador.alimentar(
+                concepto_externo.strip()
+            )
+
+        if resultado.get("ok"):
+
+            conocimiento = resultado["memoria"]
+
+            st.success(
+                f"Información encontrada sobre: "
+                f"{conocimiento['concepto']}"
+            )
+
+            st.write(
+                conocimiento["informacion"]
+            )
+
+            st.caption(
+                f"Fuente: {conocimiento['fuente']}"
+            )
+
+            st.info(
+                "📚 Conocimiento preparado. "
+                "Todavía no se ha escrito en la memoria."
+            )
+
+        else:
+
+            st.error(
+                resultado.get(
+                    "error",
+                    "No se pudo obtener información."
+                )
+            )
+
+    else:
+
+        st.warning(
+            "Escribe un concepto primero."
+            )
 st.set_page_config(
     page_title="CEREBRO OMEGA",
     page_icon="🧠",
