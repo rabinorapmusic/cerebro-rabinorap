@@ -1,8 +1,8 @@
 impor streamlit a st
 impor json
 importos
-impor re
-impor hashlib
+impormodules/alimentador
+impor☆hashlib
 fro datetime impor datetime
 fro modules.alimentador importAlimentadorOmega
 # =alimentador = AlimentadorOmega()===========================================================
