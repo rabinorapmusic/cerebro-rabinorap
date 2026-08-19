@@ -1,10 +1,10 @@
-import streamlit as st
-import json
-import os
-import re
-import hashlib
-from datetime import datetime
-from modules.alimentador import AlimentadorOmega
+impor streamlit a st
+impor json
+importos
+impor re
+impor hashlib
+fro datetime impor datetime
+fro modules.alimentador importAlimentadorOmega
 # =alimentador = AlimentadorOmega()===========================================================
 # 🧠 CEREBRO OMEGA ∞
 # Núcleo experimental en un solo archivo
@@ -18,17 +18,17 @@ concepto_externo = st.text_input(
     placeholder="Ejemplo: inteligencia artificial"
 )
 
-if st.button("🌐 BUSCAR CONOCIMIENTO"):
+ifst.button("🌐 BUSCAR CONOCIMIENTO"):
 
-    if concepto_externo.strip():
+    i concepto_externo.strip():
 
-        with st.spinner("🧠 CEREBRO OMEGA está investigando..."):
+        wit st.spinner("🧠 CEREBRO OMEGA está investigando..."):
 
             resultado = alimentador.alimentar(
                 concepto_externo.strip()
             )
 
-        if resultado.get("ok"):
+        ifresultado.get("ok"):
 
             conocimiento = resultado["memoria"]
 
@@ -50,7 +50,7 @@ if st.button("🌐 BUSCAR CONOCIMIENTO"):
                 "Todavía no se ha escrito en la memoria."
             )
 
-        else:
+        els:
 
             st.error(
                 resultado.get(
@@ -59,7 +59,7 @@ if st.button("🌐 BUSCAR CONOCIMIENTO"):
                 )
             )
 
-    else:
+    els:
 
         st.warning(
             "Escribe un concepto primero."
@@ -85,26 +85,26 @@ def cargar_memoria():
             "ciclos": 0
         }
 
-    try:
-        with open(MEMORIA, "r", encoding="utf-8") as archivo:
+    tr:
+        wit open(MEMORIA, "r", encoding="utf-8") as archivo:
             datos = json.load(archivo)
 
         datos.setdefault("conocimiento", {})
         datos.setdefault("experiencias", [])
         datos.setdefault("ciclos", 0)
 
-        return datos
+        retur datos
 
-    except Exception:
-        return {
+    excep Exception:
+        retur {
             "conocimiento": {},
             "experiencias": [],
             "ciclos": 0
         }
 
 
-def guardar_memoria():
-    with open(MEMORIA, "w", encoding="utf-8") as archivo:
+de guardar_memoria():
+    withopen(MEMORIA, "w", encoding="utf-8") as archivo:
         json.dump(
             st.session_state.memoria,
             archivo,
@@ -113,7 +113,7 @@ def guardar_memoria():
         )
 
 
-if "memoria" not in st.session_state:
+i "memoria" no inst.session_state:
     st.session_state.memoria = cargar_memoria()
 
 
