@@ -1,1 +1,1 @@
-HF_TOKEN cerebro_omega.py GROQ_API_KEY
+HF_TOKEN
