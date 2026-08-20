@@ -1,1 +1,1 @@
-streamlit HF_TOKEN
+streamlit requests
