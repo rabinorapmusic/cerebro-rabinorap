@@ -601,14 +601,3 @@ else:
 st.markdown(
     '<div class="line"></div>',
     unsafe_allow_html=True
-)
-
-if st.button(
-    "🗑️ BORRAR MEMORIA",
-    use_container_width=True
-):
-
-    if ARCHIVO.exists():
-        ARCHIVO.unlink()
-
-    st.rerun()
