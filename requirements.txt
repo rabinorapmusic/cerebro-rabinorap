@@ -1,1 +1,1 @@
-HF_TOKEN
+streamlit HF_TOKEN
