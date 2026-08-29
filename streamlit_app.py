@@ -1,4 +1,4 @@
-# V17 - TODAS LAS TIENDAS DIGITALES COMPLETAS
+
 import streamlit as st, requests, base64, os
 
 st.set_page_config(page_title="STREAMING HOUSE", layout="wide")
