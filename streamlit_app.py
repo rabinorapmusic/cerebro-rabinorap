@@ -1,5 +1,7 @@
-
-import streamlit as st, requests, base64, os
+import streamlit as st
+import requests
+import base64
+import os
 
 st.set_page_config(page_title="STREAMING HOUSE", layout="wide")
 st.markdown("<style>.stApp{background:#000;color:white}.house-title{text-align:center;font-size:22px;font-weight:900;letter-spacing:1px}.platform{background:#111;border:1px solid #222;border-radius:12px;padding:12px;text-align:center;margin-bottom:6px;font-size:13px;font-weight:700}</style>", unsafe_allow_html=True)
